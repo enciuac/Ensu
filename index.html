@@ -1456,6 +1456,13 @@ function runMigraciones(existing){
       }).then(()=>db.ref("migrations/m08_epicteto_reflexion").set(true));
     });
   });
+  db.ref("migrations/m10_cansancio_leyendo").once("value").then(snap=>{
+    if(snap.val())return;
+    db.ref("libros").once("value").then(s=>{
+      const b=(s.val()?Object.values(s.val()):[]).find(x=>(x.libro||"").toLowerCase().includes("sociedad del cansancio"));
+      if(b)db.ref("libros/"+b.id).update({estado:"leyendo",progreso:71}).then(()=>db.ref("migrations/m10_cansancio_leyendo").set(true));
+    });
+  });
   db.ref("migrations/m09_sociedad_cansancio").once("value").then(snap=>{
     if(snap.val())return;
     db.ref("libros").once("value").then(s=>{
@@ -1465,7 +1472,7 @@ function runMigraciones(existing){
       const id=books.reduce((m,b)=>Math.max(m,+b.id||0),0)+1;
       db.ref("libros/"+id).set({
         id,tipo:"libro",libro:"La sociedad del cansancio",autor:"Byung-Chul Han",
-        fecha:"2026-09-22",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:null,
+        fecha:"2026-09-22",estado:"leyendo",progreso:71,dificultad:"Moderada",puntuacion:null,
         tags:["Sociedad","Rendimiento","Introspección","Profundidad","Vínculos","Filosofía"],
         tituloRef:"Tener más opciones no significa necesariamente ser más libre",
         reflexion:"Exceso de posibilidades y dificultad para vincularse\nLa sociedad moderna ofrece tantas opciones, estímulos y posibilidades que comprometerse profundamente con una sola cosa, persona o camino se vuelve más difícil. Cuando siempre parece existir una alternativa mejor, los vínculos pueden volverse más frágiles y provisionales. Esa falta de arraigo externo puede terminar generando también una pérdida de conexión con uno mismo.\n\nInmediatez, estímulo constante y pérdida de introspección\nEl individuo moderno vive orientado hacia lo rápido, lo inmediato y lo efímero. El exceso de estímulos puede funcionar como una forma de evitar el silencio, el aburrimiento y el encuentro con uno mismo.\n\nEl exceso de actividad también puede ser una forma de huida\nEstar ocupado, mejorar, producir, entrenar, trabajar o aprender puede parecer siempre positivo, pero también puede convertirse en una forma de no detenerse a pensar.\n\nProfundidad frente a sustitución constante\nLa abundancia de opciones favorece probar muchas cosas, pero puede dificultar permanecer el tiempo suficiente como para construir profundidad.",
