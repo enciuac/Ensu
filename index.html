@@ -3,2274 +3,417 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>EnSu — Biblioteca de conocimiento</title>
+<title>EnSu — Biblioteca personal</title>
+<meta name="description" content="Lo que leo me forma. Reflexiones honestas, citas que resuenan y cómo cada lectura aterriza en la vida real.">
+<meta name="theme-color" content="#F7F4EF">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EnSu">
+<meta property="og:title" content="EnSu — Lo que leo me forma">
+<meta property="og:description" content="Una biblioteca personal: reflexiones, citas y cómo cada lectura aterriza en la vida real.">
+<meta property="og:image" content="https://enciuac.github.io/Ensu/img/logo.png">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="img/logo.png" type="image/png">
 <link rel="apple-touch-icon" href="img/logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-/* ════════════════════════════════════
-   TOKENS
-════════════════════════════════════ */
-:root {
-  --bg:        #F7F4EF;
-  --surface:   #FFFFFF;
-  --surface2:  #EFECEA;
-  --accent:    #C4A97D;
-  --accent-dk: #A08952;
-  --sage:      #7B9E87;
-  --text:      #1A1714;
-  --text2:     #5C5650;
-  --muted:     #9C9690;
-  --borde:     rgba(26,23,20,0.1);
-  --danger:    #C05A4A;
-  --r:         14px;
-  --r-sm:      8px;
-  --tr:        0.2s ease;
-  --sh-sm:     0 1px 6px rgba(0,0,0,0.06);
-  --sh-md:     0 6px 24px rgba(0,0,0,0.1);
-  --sh-lg:     0 16px 56px rgba(0,0,0,0.16);
-}
-html.dark {
-  --bg:        #0E0E10;
-  --surface:   #17171A;
-  --surface2:  #1E1E23;
-  --text:      #EDE8E1;
-  --text2:     #9C9690;
-  --muted:     #5A5550;
-  --borde:     rgba(255,255,255,0.08);
-  --sh-sm:     0 1px 6px rgba(0,0,0,0.35);
-  --sh-md:     0 6px 24px rgba(0,0,0,0.45);
-  --sh-lg:     0 16px 56px rgba(0,0,0,0.6);
-}
-
-/* ════════════════════════════════════
-   RESET
-════════════════════════════════════ */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
-img{display:block;max-width:100%}
-button{cursor:pointer;font-family:'Inter',sans-serif;border:none;background:none;touch-action:manipulation}
-a{color:inherit;text-decoration:none;touch-action:manipulation}
-input,select,textarea{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:var(--surface2);border:1.5px solid var(--borde);border-radius:var(--r-sm);padding:10px 14px;width:100%;outline:none;transition:border-color var(--tr),background var(--tr);-webkit-appearance:none;appearance:none}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--surface)}
-textarea{resize:vertical;line-height:1.65}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-thumb{background:var(--borde);border-radius:4px}
-
-/* ════════════════════════════════════
-   ADMIN
-════════════════════════════════════ */
-body:not(.admin) .admin-only{display:none!important}
-body.admin .non-admin-only{display:none!important}
-
-/* ════════════════════════════════════
-   NAV
-════════════════════════════════════ */
-#main-nav{position:fixed;top:0;left:0;right:0;z-index:900;background:rgba(247,244,239,0.88);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border-bottom:1px solid var(--borde);transition:box-shadow var(--tr)}
-html.dark #main-nav{background:rgba(14,14,16,0.9)}
-#main-nav.scrolled{box-shadow:0 1px 24px rgba(0,0,0,0.08)}
-html.dark #main-nav.scrolled{box-shadow:0 1px 24px rgba(0,0,0,0.5)}
-.nav-inner{max-width:1160px;margin:0 auto;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between}
-.nav-brand{display:flex;align-items:center;gap:10px}
-.nav-logo{width:34px;height:34px;object-fit:contain;border-radius:7px}
-.nav-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;letter-spacing:.05em;color:var(--text)}
-.nav-actions{display:flex;align-items:center;gap:7px}
-.btn-nav{height:34px;padding:0 15px;border-radius:100px;font-size:13px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);display:flex;align-items:center;transition:all var(--tr);white-space:nowrap;background:transparent}
-.btn-nav:hover,.btn-nav.activa{color:var(--text);border-color:var(--text)}
-.btn-nuevo{height:34px;padding:0 17px;border-radius:100px;font-size:13px;font-weight:500;background:var(--text);color:var(--bg);display:flex;align-items:center;gap:6px;transition:all var(--tr);white-space:nowrap}
-.btn-nuevo:hover{opacity:.85;transform:translateY(-1px)}
-html.dark .btn-nuevo{background:var(--accent);color:#1A1714}
-.btn-icon{width:34px;height:34px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:15px;border:1.5px solid var(--borde);color:var(--text2);transition:all var(--tr);background:transparent}
-.btn-icon:hover{border-color:var(--text);color:var(--text);background:var(--surface2)}
-
-/* Admin bar */
-.admin-bar{position:fixed;top:58px;left:0;right:0;z-index:850;background:var(--accent);color:#1A1714;text-align:center;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:5px;display:none}
-body.admin .admin-bar{display:block}
-
-/* ════════════════════════════════════
-   BOTTOM NAV (mobile)
-════════════════════════════════════ */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:900;background:var(--surface);border-top:1px solid var(--borde);padding-bottom:env(safe-area-inset-bottom,0px)}
-.bnav-grid{display:grid;grid-template-columns:repeat(5,1fr);height:56px}
-.bnav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:500;color:var(--muted);transition:color var(--tr);cursor:pointer;background:none;border:none;padding:0}
-.bnav-btn.activo{color:var(--accent)}
-.bnav-ico{font-size:19px;line-height:1}
-.bnav-btn-plus{display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;padding:0}
-.bnav-plus-circle{width:42px;height:42px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--bg);margin-top:-10px;box-shadow:0 4px 18px rgba(0,0,0,0.22);transition:transform var(--tr)}
-html.dark .bnav-plus-circle{background:var(--accent);color:#1A1714}
-.bnav-btn-plus:hover .bnav-plus-circle{transform:scale(1.08)}
-
-@media(max-width:767px){
-  .bottom-nav{display:block}
-  body{padding-bottom:60px}
-  .nav-actions .btn-nav{display:none}
-  .btn-nuevo{display:none}
-  .btn-icon{display:none}
-  #btn-lock{display:flex}
-  .nav-name{display:none}
-  .bnav-ico{font-size:17px}
-  #quote-section{padding:16px 16px 18px}
-  .stats-page{padding:24px 16px 80px}
-  .stats-boxes{grid-template-columns:repeat(3,1fr)}
-  /* iOS: evitar zoom automático al enfocar inputs */
-  input,select,textarea{font-size:16px!important}
-  /* Targets táctiles mínimos 44px */
-  .btn-save,.btn-cancel,.btn-edit-a,.btn-del,.btn-nueva-tarea{height:44px;font-size:14px}
-  .btn-toggle-lectura,.sort-btn,.btn-filtrar,.pill-filtro,.tipo-pill{height:40px}
-  #filtros-select,.filtro-sec-sel,.tareas-sort-sel{height:40px;font-size:13px!important}
-  .pill-t{height:38px}
-  .bnav-btn{min-height:44px}
-  /* Range thumb más grande para touch */
-  input[type="range"]::-webkit-slider-thumb{width:22px;height:22px}
-}
-
-/* ════════════════════════════════════
-   PAGE OFFSET
-════════════════════════════════════ */
-.page-offset{padding-top:58px}
-body.admin .page-offset{padding-top:86px}
-
-/* ════════════════════════════════════
-   HERO
-════════════════════════════════════ */
-.hero{max-width:1160px;margin:0 auto;padding:60px 24px 44px}
-.hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
-.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,6vw,62px);font-weight:300;line-height:1.1;color:var(--text);margin-bottom:16px}
-.hero-title em{font-style:italic;color:var(--accent)}
-.hero-desc{font-size:15px;color:var(--text2);max-width:500px;line-height:1.7;margin-bottom:36px}
-.hero-stats{display:flex;align-items:center}
-.hero-stat{padding:0 28px 0 0;cursor:default}
-.hero-stat:first-child{padding-left:0}
-.stat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:400;color:var(--text);line-height:1}
-.stat-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:3px;display:block}
-.stat-div{width:1px;height:32px;background:var(--borde);margin:0 28px 0 0;align-self:center;flex-shrink:0}
-
-/* ════════════════════════════════════
-   SEARCH
-════════════════════════════════════ */
-.search-wrap{max-width:1160px;margin:0 auto;padding:0 24px 18px}
-.search-inner{position:relative;max-width:460px}
-.search-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;display:flex}
-.search-inner input{padding-left:40px;padding-right:34px;height:40px;border-radius:100px;background:var(--surface);font-size:13.5px}
-.search-inner input:focus{border-color:var(--accent)}
-.search-clear{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;padding:4px;display:none;line-height:1;cursor:pointer;background:none;border:none}
-.search-clear.visible{display:block}
-
-/* ════════════════════════════════════
-   FILTERS
-════════════════════════════════════ */
-.filtros-wrap{max-width:1160px;margin:0 auto;padding:0 24px 24px}
-.filtros-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-#filtros-container{display:flex;gap:6px;flex-wrap:wrap}
-#filtros-select{display:none;height:36px;border-radius:100px;font-size:13px;max-width:180px}
-.tipo-pill,.pill-filtro{height:33px;padding:0 15px;border-radius:100px;font-size:13px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background:transparent;cursor:pointer;transition:all var(--tr);white-space:nowrap}
-.tipo-pill:hover,.pill-filtro:hover{border-color:var(--text);color:var(--text)}
-.tipo-pill.activo,.pill-filtro.activo{background:var(--text);color:var(--bg);border-color:var(--text)}
-html.dark .tipo-pill.activo,html.dark .pill-filtro.activo{background:var(--accent);color:#1A1714;border-color:var(--accent)}
-.filtros-spacer{flex:1}
-.sort-btn{height:33px;padding:0 13px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background:transparent;cursor:pointer;transition:all var(--tr);white-space:nowrap}
-.sort-btn:hover{border-color:var(--text);color:var(--text)}
-.btn-filtrar{height:33px;padding:0 13px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background:transparent;cursor:pointer;transition:all var(--tr);white-space:nowrap}
-.btn-filtrar:hover{border-color:var(--text);color:var(--text)}
-.btn-filtrar.activo{border-color:var(--accent);color:var(--accent)}
-.filtros-secundarios{display:none;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;padding:13px 15px;background:var(--surface);border:1px solid var(--borde);border-radius:var(--r)}
-.filtros-secundarios.open{display:flex}
-.filtro-sec-sel{height:33px;padding:0 30px 0 12px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background-color:transparent;min-width:110px;transition:all var(--tr)}
-.filtro-sec-sel:focus{border-color:var(--accent);color:var(--text)}
-.btn-limpiar-sec{height:33px;padding:0 13px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--danger);border:1.5px solid var(--danger);background:transparent;cursor:pointer;transition:all var(--tr)}
-.btn-limpiar-sec:hover{background:var(--danger);color:#fff}
-
-/* ════════════════════════════════════
-   LECTURA TOGGLE
-════════════════════════════════════ */
-.lectura-row{max-width:1160px;margin:0 auto;padding:0 24px 16px;display:flex;align-items:center;gap:14px}
-.btn-toggle-lectura{height:36px;padding:0 16px;border-radius:100px;font-size:13px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background:var(--surface);cursor:pointer;transition:all var(--tr)}
-.btn-toggle-lectura:hover,.btn-toggle-lectura.abierto{border-color:var(--accent);color:var(--accent);background:rgba(196,169,125,.08)}
-.btn-lista-ext{font-size:12.5px;color:var(--muted);transition:color var(--tr)}
-.btn-lista-ext:hover{color:var(--accent)}
-
-/* ════════════════════════════════════
-   CARDS GRID
-════════════════════════════════════ */
-.grid-wrap{max-width:1160px;margin:0 auto;padding:0 24px 56px}
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(308px,1fr));gap:18px}
-
-/* Card */
-.card{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:box-shadow var(--tr),transform var(--tr),border-color var(--tr)}
-.card:hover{box-shadow:var(--sh-md);transform:translateY(-2px);border-color:rgba(196,169,125,.3)}
-.card-header{padding:16px 18px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
-.card-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.card-badges{display:flex;gap:5px;align-items:center;flex-shrink:0}
-.card-body{padding:0 18px;flex:1}
-.card-autor{font-size:11.5px;font-weight:500;color:var(--muted);margin-bottom:5px;letter-spacing:.02em}
-.card-titulo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;line-height:1.25;color:var(--text);margin-bottom:3px}
-.card-libro{font-size:12.5px;color:var(--text2);margin-bottom:9px}
-.card-meta{font-size:11.5px;color:var(--muted);margin-bottom:9px}
-.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
-.tag{font-size:11px;font-weight:500;color:var(--text2);background:var(--surface2);border-radius:100px;padding:2px 9px}
-.card-extracto{font-size:13px;color:var(--text2);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:14px}
-.card-bar{height:2px;background:var(--borde);margin:0 18px}
-.card-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
-.card-footer{padding:11px 18px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--borde);margin-top:14px}
-.card-fecha{font-size:11px;color:var(--muted)}
-.card-arrow{font-size:15px;color:var(--muted);transition:transform var(--tr),color var(--tr)}
-.card:hover .card-arrow{transform:translateX(4px);color:var(--accent)}
-
-/* Lectura cards */
-.card-pendiente,.card-proximo{border-style:dashed;opacity:.72}
-.card-pendiente:hover,.card-proximo:hover{opacity:1}
-.proximo-hint{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:4px}
-
-/* Sep lectura */
-.lectura-sep{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.sep-line{flex:1;height:1px;background:var(--borde)}
-.sep-text{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-
-/* Empty */
-.empty-state{grid-column:1/-1;text-align:center;padding:72px 24px;color:var(--muted)}
-.empty-ico{font-size:36px;margin-bottom:14px;opacity:.55}
-
-/* ════════════════════════════════════
-   BADGES
-════════════════════════════════════ */
-.badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:100px;white-space:nowrap}
-.badge-leyendo {background:rgba(123,158,135,.14);color:#4A7A5C}
-.badge-terminado{background:rgba(196,169,125,.14);color:#8A6A30}
-.badge-proximo {background:rgba(122,128,160,.14);color:#5A6090}
-.badge-pendiente{background:rgba(160,100,100,.14);color:#8A4040}
-html.dark .badge-leyendo {background:rgba(123,158,135,.2);color:#82BF96}
-html.dark .badge-terminado{background:rgba(196,169,125,.2);color:#C4A97D}
-html.dark .badge-proximo {background:rgba(122,128,160,.2);color:#8A90C0}
-html.dark .badge-pendiente{background:rgba(200,110,110,.2);color:#C08080}
-.finalidad-badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:100px;white-space:nowrap}
-.finalidad-badge.formacion   {background:rgba(122,128,160,.14);color:#5A6090}
-.finalidad-badge.autoconocimiento{background:rgba(123,158,135,.14);color:#4A7A5C}
-.finalidad-badge.ocio        {background:rgba(196,169,125,.14);color:#8A6A30}
-html.dark .finalidad-badge.formacion   {background:rgba(122,128,160,.2);color:#8A90C0}
-html.dark .finalidad-badge.autoconocimiento{background:rgba(123,158,135,.2);color:#82BF96}
-html.dark .finalidad-badge.ocio        {background:rgba(196,169,125,.2);color:#C4A97D}
-.tipo-badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:100px;background:var(--surface2);color:var(--text2)}
-
-/* ════════════════════════════════════
-   TAREAS
-════════════════════════════════════ */
-.tareas-page{display:none;max-width:1160px;margin:0 auto;padding:40px 24px 64px}
-.tareas-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px}
-.tareas-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
-.tareas-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:400;color:var(--text)}
-.btn-nueva-tarea{height:36px;padding:0 17px;border-radius:100px;font-size:13px;font-weight:500;background:var(--text);color:var(--bg);border:none;cursor:pointer;white-space:nowrap;transition:opacity var(--tr)}
-.btn-nueva-tarea:hover{opacity:.8}
-html.dark .btn-nueva-tarea{background:var(--accent);color:#1A1714}
-.tareas-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
-.tstat-card{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r-sm);padding:14px;cursor:pointer;text-align:center;transition:all var(--tr)}
-.tstat-card:hover,.tstat-card.activa{border-color:var(--accent);background:rgba(196,169,125,.07)}
-.tstat-num{display:block;font-size:26px;font-weight:400;font-family:'Cormorant Garamond',serif;color:var(--text)}
-.tstat-label{font-size:11px;font-weight:500;color:var(--muted);display:block;margin-top:2px}
-.tareas-filtros-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:22px;flex-wrap:wrap}
-.tareas-filtros{display:flex;gap:6px;flex-wrap:wrap}
-.pill-t{height:31px;padding:0 13px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background:transparent;cursor:pointer;transition:all var(--tr);white-space:nowrap}
-.pill-t:hover{border-color:var(--text);color:var(--text)}
-.pill-t.activa{background:var(--text);color:var(--bg);border-color:var(--text)}
-html.dark .pill-t.activa{background:var(--accent);color:#1A1714;border-color:var(--accent)}
-.pill-t[data-f="pendiente"].activa{background:#C05A4A;border-color:#C05A4A;color:#fff}
-.pill-t[data-f="en-progreso"].activa{background:#7B9E87;border-color:#7B9E87;color:#fff}
-.pill-t[data-f="completado"].activa{background:var(--accent);border-color:var(--accent);color:#1A1714}
-.tareas-sort-sel{height:31px;padding:0 28px 0 11px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background-color:transparent;cursor:pointer;min-width:120px}
-.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
-.kanban-board.filtrado{grid-template-columns:minmax(0,500px);justify-content:center}
-.kanban-col{background:var(--surface2);border-radius:var(--r);overflow:hidden}
-.kanban-col-header{padding:12px 14px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--borde)}
-.kanban-count{background:var(--surface);border:1px solid var(--borde);border-radius:100px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:var(--text2)}
-.kanban-col-body{padding:10px;display:flex;flex-direction:column;gap:7px;min-height:60px}
-.kanban-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 0}
-.tarea-card{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r-sm);padding:12px;transition:box-shadow var(--tr)}
-.tarea-card:hover{box-shadow:var(--sh-sm)}
-.tarea-estado-done{opacity:.6}
-.tarea-titulo{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px;line-height:1.4}
-.tarea-detalles{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:9px;white-space:pre-wrap}
-.tarea-footer{display:flex;align-items:center;justify-content:space-between}
-.tarea-fecha{font-size:11px;color:var(--muted)}
-.tarea-actions{display:flex;gap:4px}
-.tarea-btn{width:26px;height:26px;border-radius:6px;font-size:12px;color:var(--text2);border:1px solid var(--borde);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
-.tarea-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--text)}
-.tarea-btn.move{color:var(--accent);border-color:var(--accent)}
-.tarea-btn.move:hover{background:rgba(196,169,125,.12)}
-
-/* ════════════════════════════════════
-   MODALS
-════════════════════════════════════ */
-.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(14,14,16,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
-.modal-overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--borde);border-radius:18px;box-shadow:var(--sh-lg);position:relative;width:100%;max-width:640px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:mIn .2s ease}
-@keyframes mIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
-.modal-close{position:absolute;top:14px;right:14px;z-index:10;width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all var(--tr);cursor:pointer}
-.modal-close:hover{background:var(--borde);color:var(--text)}
-.modal-bar{height:4px;flex-shrink:0}
-
-/* Form modal */
-.form-modal{max-width:700px}
-.form-header{padding:24px 26px 0}
-.form-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;color:var(--text);margin-bottom:3px}
-.form-subtitle{font-size:12.5px;color:var(--muted);padding-bottom:14px}
-.form-body{padding:0 26px;overflow-y:auto;flex:1;min-height:0}
-#libro-form{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.form-sec{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:18px 0 10px;border-top:1px solid var(--borde);margin-top:4px}
-.form-sec:first-child{margin-top:0;padding-top:14px;border-top:none}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
-.form-g{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
-.form-g label{font-size:11.5px;font-weight:600;color:var(--text2);letter-spacing:.02em}
-.err-msg{font-size:11px;color:var(--danger);display:none;margin-top:3px}
-.err-msg.visible{display:block}
-input[type="range"]{-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--borde);border:none;padding:0;cursor:pointer;width:100%}
-input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);border:2.5px solid var(--surface);box-shadow:0 0 0 1.5px var(--accent);cursor:pointer}
-/* Private notes block */
-.private-notes{background:rgba(196,169,125,.07);border:1.5px dashed rgba(196,169,125,.35);border-radius:var(--r-sm);padding:13px 14px;margin-bottom:12px}
-.private-notes-lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;display:flex;align-items:center;gap:5px}
-.private-notes textarea{background:transparent;border-color:rgba(196,169,125,.22)}
-.private-notes textarea:focus{border-color:var(--accent);background:var(--surface)}
-.form-footer{padding:14px 26px 22px;border-top:1px solid var(--borde);display:flex;gap:9px;justify-content:flex-end;flex-shrink:0}
-.btn-cancel{height:38px;padding:0 18px;border-radius:100px;font-size:13px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);background:transparent;cursor:pointer;transition:all var(--tr)}
-.btn-cancel:hover{border-color:var(--text);color:var(--text)}
-.btn-save{height:38px;padding:0 22px;border-radius:100px;font-size:13px;font-weight:600;color:var(--bg);background:var(--text);border:none;cursor:pointer;transition:opacity var(--tr)}
-.btn-save:hover{opacity:.85}
-html.dark .btn-save{background:var(--accent);color:#1A1714}
-
-/* Detail modal */
-.detail-modal{max-width:760px}
-.detail-header{padding:22px 26px 0}
-.detail-eyebrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-#d-autor{font-size:12px;color:var(--muted);font-weight:500}
-.detail-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;line-height:1.25;color:var(--text);margin-bottom:5px}
-.detail-sub{font-size:13px;color:var(--text2);margin-bottom:14px}
-.detail-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px}
-.detail-tabs{display:flex;border-bottom:1px solid var(--borde);padding:0 26px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
-.detail-tabs::-webkit-scrollbar{display:none}
-.tab-btn{font-size:12.5px;font-weight:500;color:var(--muted);padding:11px 14px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all var(--tr);white-space:nowrap;margin-bottom:-1px}
-.tab-btn:hover{color:var(--text)}
-.tab-btn.activo{color:var(--text);border-bottom-color:var(--accent)}
-.tab-panel{display:none;padding:22px 26px;overflow-y:auto;flex:1}
-.tab-panel.activo{display:block}
-.tab-lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
-.d-fecha-art{font-size:12px;color:var(--muted);margin-bottom:12px;display:none}
-.rich{font-size:14px;color:var(--text2);line-height:1.78}
-.rich p{margin-bottom:13px}
-.rich p:last-child{margin-bottom:0}
-.cita-blk{margin-top:22px;border-left:3px solid var(--accent);padding:14px 18px;background:rgba(196,169,125,.07);border-radius:0 var(--r-sm) var(--r-sm) 0}
-.cita-deco{font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--accent);line-height:1;display:block;margin-bottom:5px}
-.cita-txt{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;line-height:1.6;color:var(--text)}
-.notas-txt{font-size:14px;color:var(--text2);line-height:1.75;white-space:pre-wrap}
-.ficha-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:10px}
-.ficha-item{background:var(--surface2);border-radius:var(--r-sm);padding:11px 13px}
-.ficha-k{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.ficha-v{font-size:13.5px;font-weight:500;color:var(--text)}
-.ficha-bar{height:3px;background:var(--borde);border-radius:2px;margin-top:7px}
-.ficha-bar-f{height:100%;background:var(--accent);border-radius:2px}
-.ficha-rating{display:flex;gap:4px;margin-top:7px}
-.r-dot{width:7px;height:7px;border-radius:50%;background:var(--borde)}
-.r-dot.on{background:var(--accent)}
-.detail-footer{padding:13px 26px 18px;border-top:1px solid var(--borde);display:flex;gap:9px;justify-content:flex-end;flex-shrink:0}
-.btn-edit-a{height:36px;padding:0 18px;border-radius:100px;font-size:13px;font-weight:500;background:var(--text);color:var(--bg);border:none;cursor:pointer;transition:opacity var(--tr)}
-.btn-edit-a:hover{opacity:.8}
-html.dark .btn-edit-a{background:var(--accent);color:#1A1714}
-.btn-del{height:36px;padding:0 18px;border-radius:100px;font-size:13px;font-weight:500;background:transparent;color:var(--danger);border:1.5px solid var(--danger);cursor:pointer;transition:all var(--tr)}
-.btn-del:hover{background:var(--danger);color:#fff}
-
-/* Login modal */
-.login-modal{max-width:400px}
-.login-eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
-.login-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;color:var(--text);margin-bottom:5px}
-.login-sub{font-size:13px;color:var(--muted);padding-bottom:18px}
-.logout-ico{font-size:34px;text-align:center;margin:24px 0 10px}
-.logout-title{font-size:16px;font-weight:600;color:var(--text);text-align:center;margin-bottom:6px}
-.logout-sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.6;padding:0 8px 20px}
-
-/* Toast */
-.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--text);color:var(--bg);font-size:13px;font-weight:500;padding:11px 20px;border-radius:100px;white-space:nowrap;opacity:0;transition:opacity .22s ease,transform .22s ease;z-index:2000;pointer-events:none;box-shadow:var(--sh-md)}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-html.dark .toast{background:var(--accent);color:#1A1714}
-
-/* ════════════════════════════════════
-   MOBILE
-════════════════════════════════════ */
-@media(max-width:767px){
-  .hero{padding:36px 16px 28px}
-  .hero-desc{display:none}
-  .hero-stat{padding:0 18px 0 0}
-  .stat-num{font-size:30px}
-  .stat-div{margin:0 18px 0 0}
-  .search-wrap{padding:0 16px 14px}
-  .search-inner{max-width:100%}
-  .filtros-wrap{padding:0 16px 18px}
-  #filtros-container{display:none}
-  #filtros-select{display:block}
-  .filtros-row{gap:6px}
-  .grid-wrap{padding:0 16px 40px}
-  .cards-grid{grid-template-columns:1fr;gap:13px}
-  .lectura-row{padding:0 16px 14px}
-  .tareas-page{padding:24px 16px 40px}
-  .tareas-stats{grid-template-columns:repeat(2,1fr)}
-  .kanban-board,.kanban-board.filtrado{grid-template-columns:1fr}
-  .modal-overlay{align-items:flex-end;padding:0}
-  .modal{max-height:92vh;border-radius:22px 22px 0 0;margin:auto 0 0}
-  .form-header{padding:16px 18px 0}
-  .form-body{padding:0 16px;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
-  .form-footer{padding:10px 16px max(16px,env(safe-area-inset-bottom));gap:8px}
-  .form-row{grid-template-columns:1fr}
-  .form-g{margin-bottom:8px}
-  .form-sec{padding:12px 0 8px}
-  .detail-header{padding:16px 18px 0}
-  .detail-tabs{padding:0 14px}
-  .tab-panel{padding:16px}
-  .detail-footer{padding:10px 16px max(14px,env(safe-area-inset-bottom))}
-  .ficha-grid{grid-template-columns:1fr 1fr}
-  .toast{bottom:68px}
-  /* wizard en mobile */
-  .wiz-nav{gap:8px}
-  .wiz-hint{font-size:11px}
-  /* animación bottom-sheet en mobile */
-  @keyframes mIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
-}
-@media(max-width:399px){
-  .tareas-stats{grid-template-columns:1fr 1fr}
-}
-
-/* ══ PANEL LECTURA (full-screen) ══ */
-.leer-panel{position:fixed;inset:0;z-index:1100;background:var(--bg);overflow-y:auto;display:none;opacity:0;transition:opacity .25s ease;-webkit-overflow-scrolling:touch}
-.leer-panel.open{display:block;opacity:1}
-.leer-nav{position:sticky;top:0;z-index:10;background:rgba(247,244,239,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--borde);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:54px}
-html.dark .leer-nav{background:rgba(14,14,16,.92)}
-.leer-back{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;color:var(--text2);background:none;border:none;cursor:pointer;transition:color var(--tr)}
-.leer-back:hover{color:var(--text)}
-.leer-nav-right{display:flex;gap:7px}
-.leer-content{max-width:680px;margin:0 auto;padding:48px 24px 80px}
-.leer-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.leer-tipo{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.leer-titulo{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,5vw,40px);font-weight:400;line-height:1.15;color:var(--text);margin-bottom:10px}
-.leer-autor{font-size:13.5px;color:var(--text2);margin-bottom:8px;font-style:italic}
-.leer-libro{font-size:13px;color:var(--muted);margin-bottom:18px}
-.leer-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:32px}
-.leer-tag{font-size:11px;font-weight:500;color:var(--text2);background:var(--surface2);border-radius:100px;padding:3px 10px;cursor:pointer;border:1.5px solid transparent;transition:all var(--tr)}
-.leer-tag:hover{border-color:var(--accent);color:var(--accent);background:rgba(196,169,125,.08)}
-.leer-sep{display:flex;align-items:center;gap:14px;margin:38px 0}
-.leer-sep-line{flex:1;height:1px;background:var(--borde)}
-.leer-sep-ico{font-size:14px;color:var(--muted)}
-.leer-seccion{margin-bottom:36px}
-.leer-sec-lbl{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
-.leer-rich{font-size:15px;line-height:1.82;color:var(--text2)}
-.leer-rich p{margin-bottom:16px}
-.leer-rich p:last-child{margin-bottom:0}
-.leer-cita{margin:32px 0;border-left:3px solid var(--accent);padding:18px 22px;background:rgba(196,169,125,.07);border-radius:0 var(--r) var(--r) 0}
-.leer-cita-deco{font-family:'Cormorant Garamond',serif;font-size:40px;color:var(--accent);line-height:1;display:block;margin-bottom:6px}
-.leer-cita-txt{font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;line-height:1.65;color:var(--text)}
-.leer-ficha{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:9px;margin-top:16px}
-.leer-ficha-item{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r-sm);padding:10px 12px}
-.leer-ficha-k{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.leer-ficha-v{font-size:13px;font-weight:500;color:var(--text)}
-.leer-notas{background:rgba(196,169,125,.07);border:1.5px dashed rgba(196,169,125,.3);border-radius:var(--r);padding:18px 20px;font-size:14px;color:var(--text2);line-height:1.75;white-space:pre-wrap}
-/* Relacionadas */
-.relacionadas{max-width:680px;margin:0 auto;padding:0 24px 64px;border-top:1px solid var(--borde)}
-.rel-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:32px 0 18px}
-.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.rel-card{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r-sm);padding:13px;cursor:pointer;transition:all var(--tr)}
-.rel-card:hover{border-color:rgba(196,169,125,.4);box-shadow:var(--sh-sm)}
-.rel-tipo{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.rel-titulo{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;color:var(--text);line-height:1.3;margin-bottom:3px}
-.rel-tags{font-size:11px;color:var(--muted)}
-
-/* ══ WIZARD FORM ══ */
-.wiz-progress{display:flex;gap:0;padding:16px 58px 0 26px;flex-shrink:0}
-.wiz-step-dot{flex:1;height:3px;background:var(--borde);border-radius:2px;transition:background var(--tr)}
-.wiz-step-dot+.wiz-step-dot{margin-left:4px}
-.wiz-step-dot.done{background:var(--accent)}
-.wiz-labels{display:flex;justify-content:space-between;padding:6px 58px 0 26px;flex-shrink:0}
-.wiz-lbl{font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);transition:color var(--tr)}
-.wiz-lbl.activo{color:var(--accent)}
-.wiz-page{display:none}
-.wiz-page.activo{display:block}
-.wiz-nav{display:flex;align-items:center;justify-content:space-between;gap:9px}
-.wiz-hint{font-size:11.5px;color:var(--muted)}
-.draft-banner{background:rgba(196,169,125,.12);border:1px solid rgba(196,169,125,.3);border-radius:var(--r-sm);padding:10px 14px;margin:12px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--text2)}
-.draft-actions{display:flex;gap:6px;flex-shrink:0}
-.draft-btn{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:100px;cursor:pointer;border:1.5px solid;transition:all var(--tr);background:transparent}
-.draft-btn-yes{color:var(--accent);border-color:var(--accent)}
-.draft-btn-yes:hover{background:var(--accent);color:#1A1714}
-.draft-btn-no{color:var(--muted);border-color:var(--borde)}
-.draft-btn-no:hover{border-color:var(--text);color:var(--text)}
-
-/* ══ TIMELINE ══ */
-.timeline-page{display:none;max-width:800px;margin:0 auto;padding:40px 24px 80px}
-.timeline-header{margin-bottom:40px}
-.tl-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
-.tl-title{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,5vw,44px);font-weight:300;color:var(--text)}
-.tl-group{margin-bottom:36px}
-.tl-mes{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:12px}
-.tl-mes::after{content:'';flex:1;height:1px;background:var(--borde)}
-.tl-items{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--borde);margin-left:6px;padding-left:22px}
-.tl-item{position:relative;padding:14px 16px;background:var(--surface);border:1px solid var(--borde);border-radius:var(--r-sm);cursor:pointer;transition:all var(--tr);margin-bottom:10px}
-.tl-item::before{content:'';position:absolute;left:-29px;top:18px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2.5px solid var(--bg)}
-.tl-item:hover{border-color:rgba(196,169,125,.4);transform:translateX(3px);box-shadow:var(--sh-sm)}
-.tl-item-tipo{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.tl-item-titulo{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;color:var(--text);line-height:1.3;margin-bottom:4px}
-.tl-item-extracto{font-size:12px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tl-item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
-.tl-item-fecha{font-size:11px;color:var(--muted)}
-
-/* ══ TAG PAGE ══ */
-.tag-page{display:none;max-width:1160px;margin:0 auto;padding:40px 24px 64px}
-.tag-header{margin-bottom:32px}
-.tag-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.tag-title{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,5vw,44px);font-weight:300;color:var(--text);margin-bottom:4px}
-.tag-count{font-size:13px;color:var(--muted)}
-.tag-back{font-size:13px;color:var(--muted);cursor:pointer;background:none;border:none;margin-bottom:24px;display:inline-flex;align-items:center;gap:5px;transition:color var(--tr)}
-.tag-back:hover{color:var(--accent)}
-
-@media(max-width:767px){
-  .leer-content{padding:28px 16px 60px}
-  .relacionadas{padding:0 16px 40px}
-  .leer-ficha{grid-template-columns:1fr 1fr}
-  .rel-grid{grid-template-columns:1fr 1fr}
-  .timeline-page{padding:24px 16px 60px}
-  .tag-page{padding:24px 16px 40px}
-  .wiz-labels{padding:6px 46px 0 16px}
-  .wiz-progress{padding:14px 46px 0 16px}
-  .wiz-lbl{font-size:9.5px}
-  .stats-two-col{grid-template-columns:1fr!important}
-}
-
-/* ══ CITA ALEATORIA ══ */
-#quote-section{max-width:760px;margin:0 auto;padding:24px 24px 22px;display:none}
-.quote-card{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:22px 28px;position:relative;overflow:hidden}
-.quote-card::before{content:'\201C';position:absolute;top:-12px;left:18px;font-family:'Cormorant Garamond',serif;font-size:88px;color:var(--accent);opacity:.18;line-height:1;pointer-events:none}
-.quote-text{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--text);line-height:1.65;margin-bottom:12px;padding-left:8px}
-.quote-meta{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.quote-source{font-size:12px;color:var(--muted);font-weight:500}
-.quote-refresh{font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;border:none;background:none;padding:0;font-family:'Inter',sans-serif;transition:opacity var(--tr);flex-shrink:0}
-.quote-refresh:hover{opacity:.65}
-input[type=range]:disabled{opacity:.45;pointer-events:none}
-
-/* ══ STATS PAGE ══ */
-.stats-page{display:none;padding:40px 24px 80px;max-width:900px;margin:0 auto}
-.stats-header{margin-bottom:28px}
-.stats-eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.stats-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:500;color:var(--text)}
-.stats-boxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:24px}
-.stat-box{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:16px 18px}
-.stat-box-num{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:500;color:var(--text);line-height:1}
-.stat-box-lbl{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-.stats-section{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:18px 22px;margin-bottom:14px}
-.stats-section-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
-.bar-label{font-size:12px;color:var(--text2);min-width:80px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
-.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:7px;overflow:hidden}
-.bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .5s ease}
-.bar-count{font-size:12px;color:var(--muted);min-width:18px;text-align:right}
-.tag-pills-stats{display:flex;flex-wrap:wrap;gap:7px}
-.tag-pill-stat{background:var(--surface2);border-radius:100px;padding:5px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px}
-.tag-pill-stat span{background:var(--accent);color:#1A1714;border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700}
-.stats-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-</style>
+<link rel="preconnect" href="https://covers.openlibrary.org">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>try{var s=localStorage.getItem("ensu-dark");if(s==="1"||(s===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");}catch(e){}</script>
+<link rel="stylesheet" href="css/ensu.css">
 </head>
 <body>
+
+<!-- ICONOS -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="9" y="4" width="4" height="16" rx="1"/><path d="m15.5 5.2 3.9-1 3.6 14.6-3.9 1z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-8M21 20H3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.8-1.2"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-arrow-l" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="m16 6-4-4-4 4M12 2v13"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M20.2 11.8 12 20H4v-8l8.2-8.2a5.7 5.7 0 0 1 8 8z"/><path d="M16 8 2 22M17.5 15H9"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+</svg>
 
 <!-- NAV -->
 <nav id="main-nav">
   <div class="nav-inner">
-    <a href="#" class="nav-brand" onclick="irAHome();return false">
-      <img src="img/logo.png" alt="EnSu" class="nav-logo">
+    <a href="#/" class="nav-brand" aria-label="EnSu, inicio">
+      <img src="img/logo.png" alt="" class="nav-logo">
       <span class="nav-name">EnSu</span>
     </a>
+    <div class="nav-links">
+      <a href="#/" class="nav-link" data-nav="home">Inicio</a>
+      <a href="#/biblioteca" class="nav-link" data-nav="biblioteca">Biblioteca</a>
+      <a href="#/cronologia" class="nav-link" data-nav="cronologia">Cronología</a>
+      <a href="#/estadisticas" class="nav-link" data-nav="estadisticas">Estadísticas</a>
+      <a href="#/tareas" class="nav-link admin-only" data-nav="tareas">Tareas</a>
+    </div>
     <div class="nav-actions">
-      <a href="lista.html" class="btn-nav" style="text-decoration:none">Biblioteca</a>
-      <button class="btn-nav" id="btn-timeline-nav" onclick="irATimeline()">Línea de tiempo</button>
-      <button class="btn-nav" id="btn-stats-nav" onclick="irAStats()">Estadísticas</button>
-      <button class="btn-nav admin-only" id="btn-tareas-nav" onclick="irATareas()">Tareas</button>
-      <button class="btn-nuevo admin-only" onclick="abrirFormModal()"><span>+</span> Nueva entrada</button>
-      <button class="btn-icon" id="btn-dark" onclick="toggleDarkMode()" aria-label="Modo oscuro"><span id="dark-icon">🌙</span></button>
-      <button class="btn-icon" id="btn-lock" onclick="abrirLoginModal()" aria-label="Admin"><span id="lock-icon">🔒</span></button>
+      <button class="btn-nuevo admin-only" data-act="nuevo"><svg class="i sm"><use href="#i-plus"/></svg>Nueva entrada</button>
+      <button class="btn-icon desk-only admin-only" data-act="copia" title="Descargar copia de seguridad" aria-label="Descargar copia de seguridad"><svg class="i sm"><use href="#i-download"/></svg></button>
+      <button class="btn-icon desk-only" data-act="tema" title="Cambiar tema" aria-label="Cambiar tema"><span data-tema-ico></span></button>
+      <button class="btn-icon desk-only" data-act="login" title="Acceso del autor" aria-label="Acceso del autor"><span data-lock-ico><svg class="i sm"><use href="#i-lock"/></svg></span></button>
     </div>
   </div>
 </nav>
-<div class="admin-bar" id="admin-bar">✏ Modo edición activo</div>
+<div class="admin-bar">Modo edición</div>
 
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
+<!-- BOTTOM NAV (móvil) -->
+<nav class="bottom-nav" aria-label="Navegación">
   <div class="bnav-grid">
-    <button class="bnav-btn activo" id="bnav-home" data-page="home" onclick="irAHome()">
-      <span class="bnav-ico">🏠</span><span>Inicio</span>
-    </button>
-    <a href="lista.html" class="bnav-btn" data-page="biblioteca">
-      <span class="bnav-ico">📚</span><span>Biblioteca</span>
-    </a>
-    <button class="bnav-btn" id="bnav-stats" data-page="stats" onclick="irAStats()">
-      <span class="bnav-ico">📊</span><span>Stats</span>
-    </button>
-    <!-- Non-admin: dark + lock -->
-    <button class="bnav-btn non-admin-only" onclick="toggleDarkMode()">
-      <span class="bnav-ico">🌙</span><span>Tema</span>
-    </button>
-    <button class="bnav-btn non-admin-only" onclick="abrirLoginModal()">
-      <span class="bnav-ico">🔒</span><span>Acceso</span>
-    </button>
-    <!-- Admin: + nueva + tareas -->
-    <button class="bnav-btn-plus admin-only" onclick="abrirFormModal()" aria-label="Nueva entrada">
-      <div class="bnav-plus-circle">＋</div>
-    </button>
-    <button class="bnav-btn admin-only" id="bnav-tareas" data-page="tareas" onclick="irATareas()">
-      <span class="bnav-ico">✅</span><span>Tareas</span>
-    </button>
+    <a href="#/" class="bnav-btn" data-nav="home"><svg class="i"><use href="#i-home"/></svg><span>Inicio</span></a>
+    <a href="#/biblioteca" class="bnav-btn" data-nav="biblioteca"><svg class="i"><use href="#i-library"/></svg><span>Biblioteca</span></a>
+    <button class="bnav-btn admin-only" data-act="nuevo" aria-label="Nueva entrada"><span class="bnav-plus"><svg class="i"><use href="#i-plus"/></svg></span></button>
+    <a href="#/cronologia" class="bnav-btn non-admin-only" data-nav="cronologia"><svg class="i"><use href="#i-clock"/></svg><span>Cronología</span></a>
+    <a href="#/estadisticas" class="bnav-btn" data-nav="estadisticas"><svg class="i"><use href="#i-chart"/></svg><span>Estadísticas</span></a>
+    <button class="bnav-btn" data-act="mas"><svg class="i"><use href="#i-more"/></svg><span>Más</span></button>
   </div>
 </nav>
 
-<div class="page-offset">
+<main class="page-offset">
 
-<!-- HOME PAGE -->
-<div id="home-hero">
-  <section class="hero">
-    <p class="hero-eyebrow">Biblioteca personal</p>
-    <h1 class="hero-title">Lo que leo me <em>forma.</em></h1>
-    <p class="hero-desc">Un espacio para registrar lo que los libros despiertan en mí — reflexiones honestas, citas que resuenan y cómo cada lectura aterrizó en mi vida real.</p>
-    <div class="hero-stats">
-      <div class="hero-stat"><span class="stat-num" id="stat-libros">0</span><span class="stat-label">Libros</span></div>
-      <div class="stat-div"></div>
-      <div class="hero-stat"><span class="stat-num" id="stat-reflexiones">0</span><span class="stat-label">Reflexiones</span></div>
-      <div class="stat-div"></div>
-      <div class="hero-stat"><span class="stat-num" id="stat-articulos">0</span><span class="stat-label">Artículos</span></div>
+<!-- ═══ HOME ═══ -->
+<section class="view" id="view-home">
+  <div class="wrap">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Biblioteca personal</p>
+        <h1 class="hero-title">Lo que leo me <em>forma.</em></h1>
+        <p class="hero-desc">Un espacio para registrar lo que los libros despiertan en mí: reflexiones honestas, citas que resuenan y cómo cada lectura aterriza en mi vida real.</p>
+      </div>
+      <div class="hero-stats" id="hero-stats"></div>
+    </header>
+
+    <section class="sec" id="sec-leyendo" hidden>
+      <div class="sec-head"><h2 class="sec-title">Leyendo ahora <span class="sec-count" id="leyendo-count"></span></h2></div>
+      <div class="leyendo-grid" id="leyendo-grid"></div>
+    </section>
+
+    <section class="sec" id="sec-porleer" hidden>
+      <div class="sec-head"><h2 class="sec-title">Por leer <span class="sec-count" id="porleer-count"></span></h2><a href="#/biblioteca" class="sec-link" data-act="ver-porleer">Ver lista <svg class="i sm"><use href="#i-arrow-r"/></svg></a></div>
+      <div class="estante" id="estante"></div>
+    </section>
+
+    <section class="sec" id="sec-cita" hidden>
+      <div class="quote-card">
+        <span class="quote-mark" aria-hidden="true">“</span>
+        <div>
+          <p class="quote-text" id="quote-text"></p>
+          <div class="quote-meta">
+            <span class="quote-source" id="quote-source" data-act="cita-fuente" role="link" tabindex="0"></span>
+            <button class="quote-refresh" data-act="cita"><svg class="i sm"><use href="#i-refresh"/></svg>Otra cita</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-todo">
+      <div class="sec-head"><h2 class="sec-title">Lecturas y reflexiones</h2></div>
+      <div class="toolbar">
+        <label class="search"><span class="sr-only">Buscar</span><svg class="i sm"><use href="#i-search"/></svg>
+          <input type="search" id="home-q" placeholder="Buscar por título, autor, idea…" autocomplete="off">
+          <button class="search-clear" id="home-q-clear" data-act="home-q-clear" hidden aria-label="Borrar búsqueda"><svg class="i sm"><use href="#i-x"/></svg></button>
+        </label>
+        <div class="spacer"></div>
+        <button class="pill" id="sort-btn" data-act="home-sort"></button>
+        <button class="pill" id="btn-filtrar" data-act="home-filtros"></button>
+      </div>
+      <div class="filtros-panel" id="filtros-panel">
+        <select class="sel-pill" id="f-home-finalidad" aria-label="Finalidad"></select>
+        <select class="sel-pill" id="f-home-categoria" aria-label="Categoría"></select>
+        <select class="sel-pill" id="f-home-estado" aria-label="Estado"></select>
+        <select class="sel-pill" id="f-home-dificultad" aria-label="Dificultad"></select>
+        <button class="btn-limpiar" id="btn-limpiar" data-act="home-limpiar" hidden>Limpiar</button>
+      </div>
+      <div class="pills" id="pills-tipo" style="margin-bottom:14px"></div>
+      <p class="result-line" id="result-line" hidden></p>
+      <div class="cards-grid" id="cards-grid"></div>
+    </section>
+  </div>
+</section>
+
+<!-- ═══ BIBLIOTECA ═══ -->
+<section class="view" id="view-biblioteca">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Todos los registros</p>
+      <h1 class="page-title">Biblioteca</h1>
+      <p class="page-sub" id="lib-count">Cargando…</p>
+    </header>
+    <div class="lib-stats" id="lib-stats"></div>
+    <div class="toolbar">
+      <label class="search"><span class="sr-only">Buscar</span><svg class="i sm"><use href="#i-search"/></svg>
+        <input type="search" id="lib-q" placeholder="Buscar…" autocomplete="off">
+        <button class="search-clear" id="lib-q-clear" data-act="lib-q-clear" hidden aria-label="Borrar búsqueda"><svg class="i sm"><use href="#i-x"/></svg></button>
+      </label>
+      <select class="sel-pill" id="f-lib-tipo" aria-label="Tipo"></select>
+      <select class="sel-pill" id="f-lib-categoria" aria-label="Categoría"></select>
     </div>
-  </section>
-</div>
+    <div class="tabs" id="lib-tabs" role="tablist"></div>
+    <div class="lib-list" id="lib-list"></div>
+  </div>
+</section>
 
-<!-- CITA ALEATORIA -->
-<div id="quote-section">
-  <div class="quote-card">
-    <p class="quote-text" id="quote-text"></p>
-    <div class="quote-meta">
-      <span class="quote-source" id="quote-source"></span>
-      <button class="quote-refresh" onclick="mostrarCitaAleatoria()">Otra cita →</button>
+<!-- ═══ CRONOLOGÍA ═══ -->
+<section class="view" id="view-cronologia">
+  <div class="wrap">
+    <header class="page-head"><p class="eyebrow">Cronología</p><h1 class="page-title">Línea de tiempo</h1></header>
+    <div class="tl" id="tl-body"></div>
+  </div>
+</section>
+
+<!-- ═══ ESTADÍSTICAS ═══ -->
+<section class="view" id="view-estadisticas">
+  <div class="wrap" style="max-width:980px;padding-bottom:56px">
+    <header class="page-head"><p class="eyebrow">Métricas</p><h1 class="page-title">Estadísticas</h1></header>
+    <div class="stats-boxes" id="stats-boxes"></div>
+    <div class="stats-card"><h3 id="stats-act-title">Actividad</h3><div id="stats-actividad"></div></div>
+    <div class="stats-2">
+      <div class="stats-card"><h3>Categorías</h3><div id="stats-categorias"></div></div>
+      <div class="stats-card"><h3>Por tipo</h3><div id="stats-tipos"></div></div>
     </div>
-  </div>
-</div>
-
-<!-- SEARCH -->
-<div class="search-wrap" id="search-section">
-  <div class="search-inner">
-    <span class="search-ico">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-    </span>
-    <input type="text" id="busqueda-input" placeholder="Buscar por título, autor, reflexión…" oninput="setBusqueda(this.value)" autocomplete="off">
-    <button class="search-clear" id="busqueda-clear" onclick="limpiarBusqueda()">✕</button>
-  </div>
-</div>
-
-<!-- FILTERS -->
-<div class="filtros-wrap" id="home-filtros">
-  <div class="filtros-row">
-    <div id="filtros-container"></div>
-    <select id="filtros-select" onchange="setFiltro(this.value)"></select>
-    <div class="filtros-spacer"></div>
-    <button class="sort-btn" id="sort-btn" onclick="toggleSort()">Reciente</button>
-    <button class="btn-filtrar" id="btn-filtrar" onclick="toggleFiltrosSecPanel()">Filtrar ▼</button>
-  </div>
-  <div class="filtros-secundarios" id="filtros-secundarios">
-    <select class="filtro-sec-sel" id="filtro-finalidad" onchange="setFiltroSec('finalidad',this.value)">
-      <option value="">Finalidad</option>
-      <option value="Formación">Formación</option>
-      <option value="Autoconocimiento">Autoconocimiento</option>
-      <option value="Ocio">Ocio</option>
-    </select>
-    <select class="filtro-sec-sel" id="filtro-categoria" onchange="setFiltroSec('categoria',this.value)">
-      <option value="">Categoría</option>
-      <option value="Psicología">Psicología</option>
-      <option value="Relaciones">Relaciones</option>
-      <option value="Desarrollo personal">Desarrollo personal</option>
-      <option value="Filosofía">Filosofía</option>
-      <option value="Productividad">Productividad</option>
-      <option value="Pensamiento y decisiones">Pensamiento y decisiones</option>
-      <option value="Finanzas">Finanzas</option>
-      <option value="Ciencia">Ciencia</option>
-      <option value="Geopolítica">Geopolítica</option>
-      <option value="Marketing">Marketing</option>
-      <option value="Novela">Novela</option>
-    </select>
-    <select class="filtro-sec-sel" id="filtro-estadolib" onchange="setFiltroSec('estadolib',this.value)">
-      <option value="">Estado</option>
-      <option value="leyendo">Leyendo</option>
-      <option value="terminado">Terminado</option>
-    </select>
-    <select class="filtro-sec-sel" id="filtro-dificultad" onchange="setFiltroSec('dificultad',this.value)">
-      <option value="">Dificultad</option>
-      <option value="Fácil">Fácil</option>
-      <option value="Accesible">Accesible</option>
-      <option value="Moderada">Moderada</option>
-      <option value="Intermedia">Intermedia</option>
-      <option value="Densa">Densa</option>
-      <option value="Muy densa">Muy densa</option>
-    </select>
-    <button class="btn-limpiar-sec" id="btn-limpiar-sec" onclick="limpiarFiltrosSec()" style="display:none">Limpiar</button>
-  </div>
-</div>
-
-<!-- LECTURA TOGGLE -->
-<div class="lectura-row" id="toggle-lectura-row">
-  <button class="btn-toggle-lectura" id="btn-toggle-lectura" onclick="toggleLectura()">📚 Lista de lectura ▼</button>
-  <a href="lista.html" class="btn-lista-ext">Ver lista completa →</a>
-</div>
-
-<!-- GRID -->
-<div class="grid-wrap" id="home-grid">
-  <div class="cards-grid" id="cards-grid"></div>
-</div>
-
-<!-- TAREAS PAGE -->
-<div class="tareas-page" id="tareas-page">
-  <div class="tareas-top">
-    <div>
-      <p class="tareas-eyebrow">Admin</p>
-      <h2 class="tareas-title">Mis tareas</h2>
-    </div>
-    <button class="btn-nueva-tarea" onclick="abrirFormTarea()">+ Nueva tarea</button>
-  </div>
-  <div class="tareas-stats">
-    <div class="tstat-card activa" data-estado="todas" onclick="setFiltroT('todas')"><span class="tstat-num" id="stat-total">0</span><span class="tstat-label">Total</span></div>
-    <div class="tstat-card" data-estado="pendiente" onclick="setFiltroT('pendiente')"><span class="tstat-num" id="stat-pendiente">0</span><span class="tstat-label">Pendiente</span></div>
-    <div class="tstat-card" data-estado="en-progreso" onclick="setFiltroT('en-progreso')"><span class="tstat-num" id="stat-en-progreso">0</span><span class="tstat-label">En progreso</span></div>
-    <div class="tstat-card" data-estado="completado" onclick="setFiltroT('completado')"><span class="tstat-num" id="stat-completado">0</span><span class="tstat-label">Completado</span></div>
-  </div>
-  <div class="tareas-filtros-row">
-    <div class="tareas-filtros">
-      <button class="pill-t activa" data-f="todas" onclick="setFiltroT('todas')">Todas</button>
-      <button class="pill-t" data-f="pendiente" onclick="setFiltroT('pendiente')">Pendiente</button>
-      <button class="pill-t" data-f="en-progreso" onclick="setFiltroT('en-progreso')">En progreso</button>
-      <button class="pill-t" data-f="completado" onclick="setFiltroT('completado')">Completado</button>
-    </div>
-    <select class="tareas-sort-sel" id="tareas-sort" onchange="setSortT(this.value)">
-      <option value="fecha-asc">Fecha ↑</option>
-      <option value="fecha-desc">Fecha ↓</option>
-      <option value="titulo-az">Título A–Z</option>
-      <option value="titulo-za">Título Z–A</option>
-    </select>
-  </div>
-  <div class="kanban-board">
-    <div class="kanban-col" data-estado="pendiente">
-      <div class="kanban-col-header">Pendiente <span class="kanban-count" id="count-pendiente">0</span></div>
-      <div class="kanban-col-body" id="col-pendiente"></div>
-    </div>
-    <div class="kanban-col" data-estado="en-progreso">
-      <div class="kanban-col-header">En progreso <span class="kanban-count" id="count-en-progreso">0</span></div>
-      <div class="kanban-col-body" id="col-en-progreso"></div>
-    </div>
-    <div class="kanban-col" data-estado="completado">
-      <div class="kanban-col-header">Completado <span class="kanban-count" id="count-completado">0</span></div>
-      <div class="kanban-col-body" id="col-completado"></div>
+    <div class="stats-2">
+      <div class="stats-card"><h3>Autores</h3><div id="stats-autores"></div></div>
+      <div class="stats-card"><h3>Etiquetas más frecuentes</h3><div class="tag-cloud" id="stats-tags"></div></div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- TIMELINE PAGE -->
-<div class="timeline-page" id="timeline-page">
-  <div class="timeline-header">
-    <p class="tl-eyebrow">Cronología</p>
-    <h2 class="tl-title">Línea de tiempo</h2>
+<!-- ═══ TAREAS ═══ -->
+<section class="view" id="view-tareas">
+  <div class="wrap">
+    <header class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div><p class="eyebrow">Solo autor</p><h1 class="page-title">Mis tareas</h1></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="sel-pill" id="t-sort" aria-label="Ordenar tareas">
+          <option value="fecha-asc">Fecha ↑</option><option value="fecha-desc">Fecha ↓</option>
+          <option value="titulo-az">Título A–Z</option><option value="titulo-za">Título Z–A</option>
+        </select>
+        <button class="btn-save" data-act="t-nueva"><svg class="i sm"><use href="#i-plus"/></svg>Nueva tarea</button>
+      </div>
+    </header>
+    <div class="tareas-stats" id="tareas-stats"></div>
+    <div class="kanban" id="kanban"></div>
   </div>
-  <div id="timeline-body"></div>
-</div>
+</section>
 
-<!-- TAG PAGE -->
-<div class="tag-page" id="tag-page">
-  <button class="tag-back" onclick="cerrarTagPage()">← Volver</button>
-  <div class="tag-header">
-    <p class="tag-eyebrow">Etiqueta</p>
-    <h2 class="tag-title" id="tag-page-title"></h2>
-    <p class="tag-count" id="tag-page-count"></p>
+<!-- ═══ ETIQUETA ═══ -->
+<section class="view" id="view-etiqueta">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Etiqueta</p>
+      <h1 class="page-title" id="tag-title"></h1>
+      <p class="page-sub" id="tag-count"></p>
+    </header>
+    <div class="cards-grid" id="tag-grid"></div>
   </div>
-  <div class="cards-grid" id="tag-page-grid"></div>
-</div>
+</section>
 
-<!-- STATS PAGE -->
-<div class="stats-page" id="stats-page">
-  <div class="stats-header">
-    <p class="stats-eyebrow">Métricas</p>
-    <h2 class="stats-title">Mis estadísticas</h2>
-  </div>
-  <div class="stats-boxes" id="stats-boxes"></div>
-  <div class="stats-section">
-    <p class="stats-section-title">Lecturas terminadas por mes (últimos 12 meses)</p>
-    <div id="stats-por-mes"></div>
-  </div>
-  <div class="stats-two-col">
-    <div class="stats-section">
-      <p class="stats-section-title">Por tipo</p>
-      <div id="stats-tipos"></div>
-    </div>
-    <div class="stats-section">
-      <p class="stats-section-title">Autores más leídos</p>
-      <div id="stats-autores"></div>
-    </div>
-  </div>
-  <div class="stats-section" style="margin-top:14px">
-    <p class="stats-section-title">Etiquetas más frecuentes</p>
-    <div class="tag-pills-stats" id="stats-tags"></div>
-  </div>
-</div>
+<div class="wrap"><footer class="site-foot"><span>EnSu · Lo que leo me forma</span><span>© <span id="footer-year"></span></span></footer></div>
+</main>
 
-</div><!-- /page-offset -->
-
-<!-- PANEL LECTURA -->
-<div class="leer-panel" id="leer-panel">
+<!-- ═══ PANEL DE LECTURA ═══ -->
+<div class="leer-panel" id="leer-panel" role="dialog" aria-modal="true" aria-label="Entrada">
   <nav class="leer-nav">
-    <button class="leer-back" onclick="cerrarLeer()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Volver
-    </button>
-    <div class="leer-nav-right">
-      <button class="btn-icon admin-only" id="leer-btn-edit" onclick="leerEditar()">✏</button>
-      <button class="btn-icon admin-only" id="leer-btn-del" onclick="leerEliminar()" style="color:var(--danger);border-color:var(--danger)">🗑</button>
+    <div class="leer-nav-in">
+      <button class="leer-back" data-act="cerrar-leer"><svg class="i"><use href="#i-arrow-l"/></svg>Volver</button>
+      <div class="leer-nav-r">
+        <button class="btn-icon" data-act="compartir" title="Compartir" aria-label="Compartir"><svg class="i sm"><use href="#i-share"/></svg></button>
+        <span id="leer-admin" hidden style="display:contents">
+          <button class="btn-icon" data-act="leer-editar" title="Editar" aria-label="Editar"><svg class="i sm"><use href="#i-edit"/></svg></button>
+          <button class="btn-icon peligro" data-act="leer-eliminar" title="Eliminar" aria-label="Eliminar"><svg class="i sm"><use href="#i-trash"/></svg></button>
+        </span>
+      </div>
     </div>
+    <div class="leer-progress-line" id="leer-line"></div>
   </nav>
-  <div class="leer-content" id="leer-content"></div>
-  <div class="relacionadas" id="leer-relacionadas"></div>
+  <article id="leer-content"></article>
+  <aside class="relacionadas" id="leer-rel"></aside>
 </div>
 
-<!-- MODAL TAREA -->
-<div class="modal-overlay" id="tarea-form-overlay" onclick="overlayClick(event,'tarea-form-overlay')">
-  <div class="modal" role="dialog" aria-modal="true">
-    <button class="modal-close" onclick="cerrarModal('tarea-form-overlay')">✕</button>
-    <div class="form-header"><h2 class="form-title" id="tarea-form-title-text">Nueva tarea</h2></div>
-    <div class="form-body" style="padding-top:14px">
-      <div class="form-g"><label for="t-titulo">Título</label><input type="text" id="t-titulo" placeholder="¿Qué hay que hacer?"></div>
-      <div class="form-g"><label for="t-detalles">Detalles</label><textarea id="t-detalles" rows="4" placeholder="Descripción o pasos…"></textarea></div>
-      <div class="form-row">
-        <div class="form-g"><label for="t-estado">Estado</label><select id="t-estado"><option value="pendiente">Pendiente</option><option value="en-progreso">En progreso</option><option value="completado">Completado</option></select></div>
-        <div class="form-g"><label for="t-fecha">Fecha</label><input type="date" id="t-fecha"></div>
-      </div>
+<!-- ═══ MODAL: FORMULARIO ═══ -->
+<div class="modal-overlay" id="form-overlay">
+  <div class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="form-title">
+    <button class="modal-close" data-act="cerrar" data-v="form-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="wiz-steps">
+      <button type="button" class="wiz-step activo" data-act="form-paso" data-v="0">Datos</button>
+      <button type="button" class="wiz-step" data-act="form-paso" data-v="1">Reflexión</button>
+      <button type="button" class="wiz-step" data-act="form-paso" data-v="2">Mi vida</button>
     </div>
-    <div class="form-footer">
-      <button class="btn-cancel" onclick="cerrarModal('tarea-form-overlay')">Cancelar</button>
-      <button class="btn-save" onclick="guardarTarea()">Guardar tarea</button>
+    <div class="modal-head">
+      <h2 class="modal-title" id="form-title">Nueva entrada</h2>
+      <p class="modal-sub" id="form-sub"></p>
     </div>
-  </div>
-</div>
+    <form id="libro-form" novalidate style="display:flex;flex-direction:column;flex:1;min-height:0">
+      <div class="modal-body" id="form-body">
+        <div class="form-alert" id="form-alert" role="alert"></div>
+        <div class="draft-banner" id="draft-banner" hidden>
+          <span>Tienes un borrador sin guardar.</span>
+          <div><button type="button" data-act="borrador-si">Recuperar</button><button type="button" data-act="borrador-no">Descartar</button></div>
+        </div>
 
-<!-- MODAL DETALLE -->
-<div class="modal-overlay" id="detail-overlay" onclick="overlayClick(event,'detail-overlay')">
-  <div class="modal detail-modal" role="dialog" aria-modal="true">
-    <button class="modal-close" onclick="cerrarModal('detail-overlay')">✕</button>
-    <div class="modal-bar" id="detail-bar"></div>
-    <div class="detail-header">
-      <div class="detail-eyebrow"><span id="d-autor"></span><span id="d-badge" class="badge"></span></div>
-      <h2 class="detail-title" id="d-titulo"></h2>
-      <p class="detail-sub" id="d-libro-autor"></p>
-      <div class="detail-tags" id="d-tags"></div>
-    </div>
-    <div class="detail-tabs" id="detail-tabs-bar">
-      <button class="tab-btn activo" onclick="cambiarTab(this,'tab-resumen')">Resumen</button>
-      <button class="tab-btn" id="tab-btn-mis-ref" onclick="cambiarTab(this,'tab-mis-ref')">Mis reflexiones</button>
-      <button class="tab-btn" id="tab-btn-vida" onclick="cambiarTab(this,'tab-vida')">Mi vida</button>
-      <button class="tab-btn" id="tab-btn-ficha" onclick="cambiarTab(this,'tab-ficha')">Ficha</button>
-      <button class="tab-btn admin-only" id="tab-btn-notas" onclick="cambiarTab(this,'tab-notas')" style="display:none">🔒 Notas</button>
-    </div>
-    <div class="tab-panel activo" id="tab-resumen">
-      <p class="tab-lbl" id="d-resumen-label">Sobre el libro</p>
-      <p class="d-fecha-art" id="d-fecha-articulo"></p>
-      <div class="rich" id="d-reflexion"></div>
-      <div class="cita-blk" id="d-cita-wrap" style="display:none">
-        <span class="cita-deco">"</span>
-        <p class="cita-txt" id="d-cita"></p>
-      </div>
-    </div>
-    <div class="tab-panel" id="tab-mis-ref">
-      <p class="tab-lbl">Mi análisis</p>
-      <div class="rich" id="d-mis-reflexiones"></div>
-    </div>
-    <div class="tab-panel" id="tab-vida">
-      <p class="tab-lbl">Cómo lo aplico</p>
-      <div class="rich" id="d-vida"></div>
-    </div>
-    <div class="tab-panel" id="tab-ficha">
-      <div class="ficha-grid" id="d-ficha-grid"></div>
-    </div>
-    <div class="tab-panel" id="tab-notas">
-      <p class="tab-lbl">🔒 Notas privadas</p>
-      <div class="notas-txt" id="d-notas"></div>
-    </div>
-    <div class="detail-footer admin-only">
-      <button class="btn-edit-a" id="btn-editar-detail">Editar</button>
-      <button class="btn-del" id="btn-eliminar-detail">Eliminar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL LOGIN -->
-<div class="modal-overlay" id="login-overlay" onclick="overlayClick(event,'login-overlay')">
-  <div class="modal login-modal" role="dialog" aria-modal="true">
-    <button class="modal-close" onclick="cerrarModal('login-overlay')">✕</button>
-    <div class="modal-bar" style="background:var(--accent)"></div>
-    <div id="login-section">
-      <div class="form-header">
-        <p class="login-eyebrow">Acceso privado</p>
-        <h2 class="login-title">Modo edición</h2>
-        <p class="login-sub">Solo el autor puede editar este diario.</p>
-      </div>
-      <div class="form-body" style="padding-top:4px">
-        <div class="form-g"><label for="login-user">Email</label><input type="email" id="login-user" placeholder="email@ejemplo.com" autocomplete="email" onkeydown="if(event.key==='Enter')$('login-pwd').focus()"></div>
-        <div class="form-g" style="margin-top:10px"><label for="login-pwd">Contraseña</label><input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()"><span class="err-msg" id="login-error">Credenciales incorrectas.</span></div>
-      </div>
-      <div class="form-footer">
-        <button class="btn-cancel" onclick="cerrarModal('login-overlay')">Cancelar</button>
-        <button class="btn-save" onclick="handleLogin()">Entrar</button>
-      </div>
-    </div>
-    <div id="logout-section" style="display:none">
-      <div class="logout-ico">🔓</div>
-      <p class="logout-title">Modo edición activo</p>
-      <p class="logout-sub">Estás editando como autor. Cierra sesión para volver al modo lectura.</p>
-      <div class="form-footer">
-        <button class="btn-cancel" onclick="cerrarModal('login-overlay')">Cerrar</button>
-        <button class="btn-del" style="padding:0 18px;height:38px;border-radius:100px;font-size:13px;font-weight:500" onclick="handleLogout()">Cerrar sesión</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- DATALISTS autocomplete -->
-<datalist id="dl-libros"></datalist>
-<datalist id="dl-autores"></datalist>
-
-<!-- MODAL FORMULARIO (wizard) -->
-<div class="modal-overlay admin-only" id="form-overlay" onclick="overlayClick(event,'form-overlay')">
-  <div class="modal form-modal" role="dialog" aria-modal="true">
-    <button class="modal-close" onclick="cerrarModal('form-overlay')">✕</button>
-
-    <!-- Barra progreso wizard -->
-    <div class="wiz-progress">
-      <div class="wiz-step-dot done" id="wdot-0"></div>
-      <div class="wiz-step-dot" id="wdot-1"></div>
-      <div class="wiz-step-dot" id="wdot-2"></div>
-    </div>
-    <div class="wiz-labels">
-      <span class="wiz-lbl activo" id="wlbl-0">Datos</span>
-      <span class="wiz-lbl" id="wlbl-1">Reflexión</span>
-      <span class="wiz-lbl" id="wlbl-2">Mi vida</span>
-    </div>
-
-    <div class="form-header">
-      <h2 class="form-title" id="form-title-text">Nueva entrada</h2>
-    </div>
-
-    <form id="libro-form" onsubmit="guardarLibro(event)" novalidate>
-      <div class="form-body">
-        <!-- Banner borrador -->
-        <div class="draft-banner" id="draft-banner" style="display:none">
-          <span>📝 Tienes un borrador guardado</span>
-          <div class="draft-actions">
-            <button type="button" class="draft-btn draft-btn-yes" onclick="restaurarBorrador()">Restaurar</button>
-            <button type="button" class="draft-btn draft-btn-no" onclick="descartarBorrador()">Descartar</button>
+        <!-- Paso 1 -->
+        <div class="wiz-page activo">
+          <div class="form-row">
+            <div class="form-g"><label for="f-tipo">Tipo</label><select id="f-tipo"><option value="libro">Libro</option><option value="articulo">Artículo</option><option value="reflexion">Reflexión</option><option value="privado">Privado (solo tú)</option></select></div>
+            <div class="form-g"><label for="f-estado">Estado</label><select id="f-estado"><option value="leyendo">Leyendo</option><option value="terminado">Terminado</option><option value="proximo">Próximo</option><option value="pendiente">Pendiente</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-g"><label for="f-libro" id="lbl-libro">Título del libro</label><input type="text" id="f-libro" list="dl-libros" autocomplete="off"><span class="field-err" id="err-libro"></span></div>
+            <div class="form-g"><label for="f-autor">Autor</label><input type="text" id="f-autor" list="dl-autores" autocomplete="off"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-g"><label for="f-fecha">Fecha <small>(el público solo ve el año)</small></label><input type="date" id="f-fecha"></div>
+            <div class="form-g"><label for="f-progreso">Progreso <small id="progreso-auto" hidden>· calculado por páginas</small> — <b id="progreso-val">0%</b></label><input type="range" id="f-progreso" min="0" max="100" value="0" style="margin-top:12px"></div>
+          </div>
+          <div class="form-row solo-libro">
+            <div class="form-g"><label for="f-paginaActual">Página actual</label><input type="number" id="f-paginaActual" min="0" inputmode="numeric" placeholder="ej. 150"><span class="field-err" id="err-paginaActual"></span></div>
+            <div class="form-g"><label for="f-paginasTotal">Páginas totales</label><input type="number" id="f-paginasTotal" min="1" inputmode="numeric" placeholder="ej. 320"><span class="field-err" id="err-paginasTotal"></span></div>
+          </div>
+          <div class="form-row">
+            <div class="form-g"><label for="f-finalidad">Finalidad</label><select id="f-finalidad"></select></div>
+            <div class="form-g"><label for="f-categoria">Categoría</label><select id="f-categoria"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-g"><label for="f-dificultad">Dificultad</label><select id="f-dificultad"></select></div>
+            <div class="form-g"><label for="f-puntuacion">Puntuación <small>(1–10)</small></label><input type="number" id="f-puntuacion" min="1" max="10" inputmode="numeric"><span class="field-err" id="err-puntuacion"></span></div>
+          </div>
+          <div class="form-row">
+            <div class="form-g"><label for="f-tags">Etiquetas <small>(separadas por comas)</small></label><input type="text" id="f-tags" placeholder="Estoicismo, Control…"></div>
+            <div class="form-g"><label for="f-orden">Orden en la lista de lectura</label><input type="number" id="f-orden" min="1" inputmode="numeric" placeholder="1, 2, 3…"></div>
+          </div>
+          <div class="form-g solo-libro">
+            <label for="f-portada">Portada</label>
+            <div class="cover-preview">
+              <div id="cover-prev"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                <input type="url" id="f-portada" placeholder="Pega un enlace a una imagen (opcional)">
+                <span class="field-err" id="err-portada"></span>
+                <span class="form-hint">Si lo dejas vacío se busca automáticamente. <button type="button" class="btn-link" data-act="portada-buscar">Volver a buscar</button></span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Paso 1: Datos -->
-        <div class="wiz-page activo" id="wiz-0">
-          <div class="form-row" style="margin-top:12px">
-            <div class="form-g"><label for="f-tipo">Tipo</label><select id="f-tipo" onchange="saveDraft()"><option value="libro">Libro</option><option value="articulo">Artículo</option><option value="reflexion">Reflexión</option><option value="privado">🔒 Privado</option></select></div>
-            <div class="form-g"><label for="f-estado">Estado</label><select id="f-estado" onchange="saveDraft()"><option value="leyendo">Leyendo</option><option value="terminado">Terminado</option><option value="proximo">Próximo</option><option value="pendiente">Pendiente</option></select></div>
-          </div>
-          <div class="form-row">
-            <div class="form-g"><label for="f-libro">Libro / Fuente</label><input type="text" id="f-libro" list="dl-libros" placeholder="Título del libro o artículo" oninput="saveDraft()"></div>
-            <div class="form-g"><label for="f-autor">Autor</label><input type="text" id="f-autor" list="dl-autores" placeholder="Nombre del autor" oninput="saveDraft()"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-g"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" onchange="saveDraft()"></div>
-            <div class="form-g"><label for="f-paginas-total">Páginas totales</label><input type="number" id="f-paginas-total" min="1" placeholder="ej. 320" oninput="calcProgress();saveDraft()"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-g"><label for="f-pagina-actual">Página actual</label><input type="number" id="f-pagina-actual" min="0" placeholder="ej. 150" oninput="calcProgress();saveDraft()"></div>
-            <div class="form-g"><label for="f-progreso">Progreso <span id="progreso-auto-badge" style="display:none;font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.04em;vertical-align:middle">AUTO</span> — <span id="progreso-val">50%</span></label><input type="range" id="f-progreso" min="0" max="100" value="50" oninput="$('progreso-val').textContent=this.value+'%';saveDraft()" style="margin-top:8px"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-g"><label for="f-finalidad">Finalidad</label><select id="f-finalidad" onchange="saveDraft()"><option value="">—</option><option value="Formación">Formación</option><option value="Autoconocimiento">Autoconocimiento</option><option value="Ocio">Ocio</option></select></div>
-            <div class="form-g"><label for="f-categoria">Categoría</label><select id="f-categoria" onchange="saveDraft()"><option value="">—</option><option value="Psicología">Psicología</option><option value="Relaciones">Relaciones</option><option value="Desarrollo personal">Desarrollo personal</option><option value="Filosofía">Filosofía</option><option value="Productividad">Productividad</option><option value="Pensamiento y decisiones">Pensamiento y decisiones</option><option value="Finanzas">Finanzas</option><option value="Ciencia">Ciencia</option><option value="Geopolítica">Geopolítica</option><option value="Marketing">Marketing</option><option value="Novela">Novela</option></select></div>
-          </div>
-          <div class="form-row">
-            <div class="form-g"><label for="f-dificultad">Dificultad</label><select id="f-dificultad" onchange="saveDraft()"><option value="Accesible">Accesible</option><option value="Moderada">Moderada</option><option value="Densa">Densa</option><option value="Muy densa">Muy densa</option></select></div>
-            <div class="form-g"><label for="f-puntuacion">Puntuación (1–10)</label><input type="number" id="f-puntuacion" min="1" max="10" placeholder="8" oninput="saveDraft()"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-g"><label for="f-orden">Orden en lista</label><input type="number" id="f-orden" min="1" placeholder="1, 2, 3…" oninput="saveDraft()"></div>
-            <div class="form-g"><label for="f-tags">Etiquetas <small style="font-weight:400;color:var(--muted)">(comas)</small></label><input type="text" id="f-tags" placeholder="Gratitud, Control…" oninput="saveDraft()"></div>
-          </div>
+        <!-- Paso 2 -->
+        <div class="wiz-page">
+          <div class="form-g"><label for="f-tituloRef" id="lbl-ref">Idea central en una frase</label><input type="text" id="f-tituloRef" placeholder="La idea que resume esta lectura…"><span class="field-err" id="err-tituloRef"></span></div>
+          <div class="form-g"><label for="f-reflexion">Resumen / Teoría</label><textarea id="f-reflexion" rows="9" placeholder="Lo que dice el libro y lo que despertó en ti.&#10;&#10;Separa los párrafos con una línea en blanco. Si un párrafo empieza con una línea corta, se mostrará como subtítulo."></textarea></div>
+          <div class="form-g"><label for="f-cita">Cita destacada</label><textarea id="f-cita" rows="3" placeholder="La frase que no puedes olvidar…"></textarea></div>
         </div>
 
-        <!-- Paso 2: Reflexión -->
-        <div class="wiz-page" id="wiz-1">
-          <div class="form-g" style="margin-top:12px"><label for="f-titulo-reflexion">Título de la reflexión</label><input type="text" id="f-titulo-reflexion" placeholder="La idea central en una frase…" oninput="saveDraft()"></div>
-          <div class="form-g"><label for="f-reflexion">Resumen / Teoría</label><textarea id="f-reflexion" rows="6" placeholder="Lo que esta lectura despertó en ti…&#10;&#10;Puedes usar párrafos — cada doble salto se mostrará separado." oninput="saveDraft()"></textarea></div>
-          <div class="form-g"><label for="f-cita">Cita destacada</label><textarea id="f-cita" rows="3" placeholder='"La frase que no puedes olvidar…"' oninput="saveDraft()"></textarea></div>
-        </div>
-
-        <!-- Paso 3: Mi vida + notas -->
-        <div class="wiz-page" id="wiz-2">
-          <div class="form-g" style="margin-top:12px"><label for="f-vida">Cómo lo aplico a mi vida</label><textarea id="f-vida" rows="4" placeholder="¿Cómo aterrizas esto en tu día a día?" oninput="saveDraft()"></textarea></div>
-          <div class="form-g"><label for="f-tension">Tensión / Pregunta abierta</label><textarea id="f-tension" rows="3" placeholder="Una pregunta que esta lectura no resolvió del todo…" oninput="saveDraft()"></textarea></div>
-          <div class="private-notes" style="margin-top:8px">
-            <p class="private-notes-lbl">🔒 Notas privadas</p>
-            <textarea id="f-notas" rows="3" placeholder="Apuntes rápidos, ideas, recordatorios…" oninput="saveDraft()"></textarea>
-          </div>
+        <!-- Paso 3 -->
+        <div class="wiz-page">
+          <div class="form-g"><label for="f-vida">Cómo lo aplico a mi vida</label><textarea id="f-vida" rows="7" placeholder="¿Cómo aterrizas esto en tu día a día?"></textarea></div>
+          <div class="form-g"><label for="f-tension">Mi análisis / pregunta abierta</label><textarea id="f-tension" rows="4" placeholder="Lo que piensas tú, o una pregunta que esta lectura no resolvió…"></textarea></div>
+          <div class="private-notes form-g"><label for="f-notas"><svg class="i sm"><use href="#i-lock"/></svg>Notas privadas <small>(solo tú las ves)</small></label><textarea id="f-notas" rows="3" placeholder="Apuntes rápidos, ideas, recordatorios…"></textarea></div>
         </div>
       </div>
-
-      <div class="form-footer">
-        <div class="wiz-nav" style="width:100%">
-          <span class="wiz-hint" id="wiz-hint">Paso 1 de 3</span>
+      <div class="modal-foot">
+        <div class="wiz-foot">
+          <div style="display:flex;gap:10px;align-items:center">
+            <span class="wiz-hint" id="wiz-hint">Paso 1 de 3</span>
+            <button type="button" class="btn-link" id="form-del" data-act="form-del" style="color:var(--danger)" hidden>Eliminar</button>
+          </div>
           <div style="display:flex;gap:9px">
-            <button type="button" class="btn-cancel" id="wiz-prev" onclick="wizPrev()" style="display:none">← Anterior</button>
-            <button type="button" class="btn-save" id="wiz-next" onclick="wizNext()">Siguiente →</button>
-            <button type="submit" class="btn-save" id="wiz-submit" style="display:none">Guardar entrada</button>
+            <button type="button" class="btn-cancel" id="wiz-prev" data-act="form-prev" hidden>Anterior</button>
+            <button type="button" class="btn-save" id="wiz-next" data-act="form-next">Siguiente</button>
+            <button type="submit" class="btn-save" id="wiz-submit" hidden><span class="spin"></span>Guardar entrada</button>
           </div>
         </div>
       </div>
     </form>
   </div>
 </div>
+<datalist id="dl-libros"></datalist>
+<datalist id="dl-autores"></datalist>
 
-<div class="toast" id="toast"></div>
+<!-- ═══ MODAL: LOGIN ═══ -->
+<div class="modal-overlay" id="login-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <button class="modal-close" data-act="cerrar" data-v="login-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-bar"></div>
+    <div id="login-section">
+      <div class="modal-head"><p class="eyebrow">Acceso privado</p><h2 class="modal-title" id="login-title" style="margin-top:6px">Modo edición</h2><p class="modal-sub">Solo el autor puede editar este diario.</p></div>
+      <div class="modal-body">
+        <div class="form-g"><label for="login-email">Email</label><input type="email" id="login-email" autocomplete="email" placeholder="tu@email.com"></div>
+        <div class="form-g"><label for="login-pwd">Contraseña</label><input type="password" id="login-pwd" autocomplete="current-password" placeholder="••••••••"></div>
+        <p class="field-err" id="login-error" role="alert"></p>
+        <button type="button" class="btn-link" data-act="login-reset" style="margin:4px 0 8px">¿Olvidaste la contraseña?</button>
+      </div>
+      <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="login-overlay">Cancelar</button><button class="btn-save" id="login-btn" data-act="login-go"><span class="spin"></span>Entrar</button></div>
+    </div>
+    <div id="logout-section" hidden>
+      <div class="modal-head"><p class="eyebrow">Sesión iniciada</p><h2 class="modal-title" style="margin-top:6px">Modo edición activo</h2><p class="modal-sub">Cierra sesión para volver al modo lectura.</p></div>
+      <div class="modal-body"></div>
+      <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="login-overlay">Cerrar</button><button class="btn-del" data-act="logout">Cerrar sesión</button></div>
+    </div>
+  </div>
+</div>
 
-<!-- Firebase -->
+<!-- ═══ MODAL: TAREA ═══ -->
+<div class="modal-overlay" id="tarea-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="tarea-title">
+    <button class="modal-close" data-act="cerrar" data-v="tarea-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-head"><h2 class="modal-title" id="tarea-title">Nueva tarea</h2></div>
+    <div class="modal-body">
+      <div class="form-g"><label for="t-titulo">Título</label><input type="text" id="t-titulo" placeholder="¿Qué hay que hacer?"><span class="field-err" id="err-t-titulo">El título es obligatorio.</span></div>
+      <div class="form-g"><label for="t-detalles">Detalles</label><textarea id="t-detalles" rows="4" placeholder="Descripción o pasos…"></textarea></div>
+      <div class="form-row">
+        <div class="form-g"><label for="t-estado">Estado</label><select id="t-estado"><option value="pendiente">Pendiente</option><option value="en-progreso">En progreso</option><option value="completado">Completado</option></select></div>
+        <div class="form-g"><label for="t-fecha">Fecha</label><input type="date" id="t-fecha"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="tarea-overlay">Cancelar</button><button class="btn-save" id="t-guardar" data-act="t-guardar"><span class="spin"></span>Guardar tarea</button></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: MÁS (móvil) ═══ -->
+<div class="modal-overlay" id="mas-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-label="Más opciones">
+    <button class="modal-close" data-act="cerrar" data-v="mas-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-head"><h2 class="modal-title">Más</h2></div>
+    <div class="sheet-list">
+      <button class="sheet-item admin-only" data-act="mas-ir" data-v="cronologia"><svg class="i"><use href="#i-clock"/></svg>Cronología</button>
+      <button class="sheet-item admin-only" data-act="mas-ir" data-v="tareas"><svg class="i"><use href="#i-tasks"/></svg>Mis tareas</button>
+      <button class="sheet-item" data-act="tema"><span data-tema-ico></span><span data-tema-txt>Modo oscuro</span></button>
+      <button class="sheet-item admin-only" data-act="copia"><svg class="i"><use href="#i-download"/></svg>Descargar copia de seguridad</button>
+      <div class="sheet-sep"></div>
+      <button class="sheet-item non-admin-only" data-act="login"><svg class="i"><use href="#i-lock"/></svg>Acceso autor</button>
+      <button class="sheet-item peligro admin-only" data-act="logout"><svg class="i"><use href="#i-logout"/></svg>Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/ensu.js"></script>
 <script>
-/* ── FIREBASE ── */
-let db;
-try {
-  firebase.initializeApp({
-    apiKey:            "AIzaSyCzqDu7SLE_Gj8OoSWABn4RMyt5i3z1Y-Q",
-    authDomain:        "ensu-tareas.firebaseapp.com",
-    databaseURL:       "https://ensu-tareas-default-rtdb.firebaseio.com",
-    projectId:         "ensu-tareas",
-    storageBucket:     "ensu-tareas.firebasestorage.app",
-    messagingSenderId: "589644635319",
-    appId:             "1:589644635319:web:fbe2e4073f8e4e49bac132"
-  });
-  db = firebase.database();
-} catch(_) {
-  /* Firebase no disponible — mock para que la UI no se quede en blanco */
-  const _ref = () => ({
-    once: () => Promise.resolve({val:()=>null}),
-    on:   (e,cb) => { setTimeout(()=>cb({val:()=>null}),0); return ()=>{}; },
-    set:  () => Promise.resolve(),
-    update:()=> Promise.resolve(),
-    push: () => ({key:String(Date.now())}),
-    remove:()=> Promise.resolve()
-  });
-  db = {ref:_ref};
-}
-
-const DATA_VERSION = "3";
-
-/* ── DATOS INICIALES ── */
-const DATOS_INICIALES = [
-  {
-    id:1,tipo:"libro",libro:"Encontrar un hogar",autor:"René Ponte (@renezz)",
-    fecha:"2025-06-01",estado:"leyendo",progreso:90,dificultad:"Accesible",puntuacion:9,
-    tags:["Identidad","Amor propio","Nostalgia","Control","Gratitud","Presente","Fe","Introspección","Disciplina"],
-    tituloRef:"El hogar que buscas fuera ya existe dentro de ti — solo tienes que construirlo",
-    reflexion:"René Ponte construye el libro desde sus propias experiencias y lo organiza en torno a cuatro ejes que se entrelazan: el amor, la nostalgia, la muerte y Dios. No ofrece respuestas fáciles — acompaña al lector en un proceso de cuestionamiento íntimo.\n\nEl libro propone que como nos amamos a nosotros mismos determinamos cómo permitimos que los demás nos amen y nos traten. No es autoayuda superficial: es la idea de que el amor real, sin apegos ni inseguridades, solo es posible cuando uno ya no necesita al otro para completarse.\n\nSobre la nostalgia, René señala algo incómodo: vivimos atrapados en lo que fue, ya sea añorando momentos buenos o reviviendo heridas. En el caso del amor, ese anclaje al pasado bloquea el presente e impide que nuevas personas entren de verdad.\n\nEl hogar del título no es físico. Es el proceso —incómodo y necesario— de reconciliarse con uno mismo.",
-    cita:"El hogar que todos anhelamos se encuentra al otro lado del sacrificio cuando uno renuncia a la fantasía de la autosuficiencia absoluta y cultiva la virtud, la paciencia y el coraje para mirar de frente aquello que le incomoda.",
-    vida:"El patrón que tengo de invertir demasiado en personas que dan señales mixtas tiene una raíz directa en lo que describe el libro: cuando no tienes el hogar construido dentro, lo buscas en el otro.\n\nLa nostalgia me toca de cerca. El libro me hace preguntarme cuánto de lo que siento en relaciones es presente real y cuánto es apego a cómo fueron las cosas.\n\nLa disciplina como amor propio — el gym, el BJJ, la rutina — ya la practicaba sin este marco. El libro le da nombre.",
-    tension:"La pregunta que el libro deja abierta es: ¿cuándo el deseo viene del amor propio y cuándo viene del vacío?\n\nEl deseo desde el vacío es urgente, desesperado, que no disfruta el proceso. El deseo desde el amor propio se disfruta el camino, y si no se cumple, no nos rompe — porque era un complemento, no una necesidad.",
-    finalidad:"Autoconocimiento",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:2,tipo:"articulo",libro:"Psicoanálisis / Freud",autor:"",
-    fecha:"2026-06-25",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:null,
-    tags:["Psicología","Freud","Mecanismos de defensa","Proyección","Represión","Negación"],
-    tituloRef:"La proyección, represión y negación de Freud",
-    reflexion:"Los mecanismos de defensa son estrategias inconscientes mediante las cuales el yo gestiona la angustia generada por conflictos entre los impulsos del ello, las exigencias del superyó y las restricciones de la realidad.\n\nPROYECCIÓN: El yo atribuye a otras personas impulsos, deseos o emociones propios que no puede aceptar como suyos. En el enamoramiento, idealizamos al otro atribuyéndole virtudes que pertenecen a nuestra imagen proyectada.\n\nREPRESIÓN: El mecanismo nuclear de la teoría freudiana. El yo excluye de la conciencia representaciones vinculadas a impulsos inaceptables. Lo reprimido no se destruye: permanece activo en el inconsciente y regresa de forma disfrazada.\n\nNEGACIÓN: Mecanismo más primitivo. El sujeto rechaza que un hecho doloroso exista. Protege al yo a corto plazo, pero impide el procesamiento del problema.",
-    cita:"",vida:"",
-    tension:"La proyección me parece el más cotidiano de los tres. Lo veo claramente en cómo a veces atribuyo a los demás intenciones que en realidad dicen más de mis propios miedos.\n\nLa represión explica muchos patrones repetitivos que no entiendo desde la lógica consciente.\n\nLa negación es la más difícil de detectar en uno mismo, precisamente porque opera negando.",
-    finalidad:"Formación",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:3,tipo:"articulo",libro:"El principio del placer — Freud",autor:"",
-    fecha:"2026-04-19",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:null,
-    tags:["Psicología","Freud","Trauma","Autosabotaje","Relaciones","Inconsciente"],
-    tituloRef:"No siempre buscas ser feliz — tu mente repite lo conocido aunque te haga daño",
-    reflexion:"La base es que las personas no siempre buscan estar bien. El cerebro y la mente buscan respuestas y entenderlo todo, por lo que tienden a repetir cosas malas o patrones negativos hasta comprenderlos.\n\nFreud propone que dentro de la mente conviven dos modos: el modo vida —querer estar bien, amar, disfrutar, crear— y el modo destrucción —rabia, autosabotaje, volver a lo que te hace mal.\n\nEsta teoría rompe la lógica de «si algo duele, lo evito». Freud afirma que muchas veces ocurre exactamente lo contrario.",
-    cita:"Prefiero repetir lo que ya conozco, aunque me haga daño, que enfrentarme a algo nuevo e incierto.",
-    vida:"Este principio se da sobre todo en las relaciones. Cuando alguien te gusta pero te genera ansiedad o incertidumbre, pasan tres cosas a la vez: te enganchas más de lo normal, te obsesionas, y sabes que te hace daño pero te quedas.\n\nAquí se confunde intensidad con conexión. Lo familiar engancha — no necesariamente lo bueno.",
-    tension:"No siempre elegimos lo que nos hace bien, sino lo que más nos hace sentir. Sentir más no significa estar mejor.\n\nNo nos enganchamos a la persona como tal, sino a lo que podría ser, a los momentos buenos del pasado, a la ilusión y la expectativa.",
-    finalidad:"Autoconocimiento",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:4,tipo:"articulo",libro:"Isomorfismo — Jean Piaget",autor:"",
-    fecha:"2026-04-20",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:null,
-    tags:["Psicología","Piaget","Isomorfismo","Lógica","Relaciones","Realidad"],
-    tituloRef:"Deja de pensar cómo te gustaría que fueran las cosas y empieza a pensar cómo realmente funcionan",
-    reflexion:"El isomorfismo de Jean Piaget dice que tu cabeza aprende a pensar con la misma lógica con la que se mueve el mundo real.\n\nTu forma de pensar = misma estructura que lo que pasa fuera. Aprendemos cuando nuestra forma de pensar sigue la misma estructura que la realidad. Y sufrimos cuando no lo hace.",
-    cita:"No importa lo que siento, importa cómo funcionan las cosas.",
-    vida:"Sin aplicar el isomorfismo: «Si la quiero → debería quedarse.» «Si hay dudas → ya se resolverán solas.»\n\nAplicando el isomorfismo: «Si duda ahora → probablemente no está al 100%.» «Si no decide → ya está decidiendo.»",
-    tension:"El límite del isomorfismo es que la mente solo puede crear una versión simplificada e incompleta de la realidad. Aunque tu forma de pensar parezca coherente y «encajar» con el mundo, nunca es una copia exacta.",
-    finalidad:"Formación",categoria:"Pensamiento y decisiones",orden:null,notas:""
-  },
-  {
-    id:5,tipo:"reflexion",libro:"Reflexión personal",autor:"",
-    fecha:"2026-06-25",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:null,
-    tags:["Cambio","Miedo","Crecimiento personal","Identidad","Introspección","Soledad"],
-    tituloRef:"Abraza el cambio",
-    reflexion:"Reflexionando en el gimnasio sobre mi vida en general, me he dado cuenta de que el ser humano promedio teme el cambio por miedo a ese sentimiento inexplorado.\n\nConsidero que deberíamos abrazar el cambio. Si algo en nuestra vida va a cambiar, es por algo — ya sea a bien o a mal, todo cambio conlleva una experiencia y un aprendizaje.",
-    cita:"La duda surge solo cuando te preocupas por hacerlo bien.",
-    vida:"Últimamente mi vida giraba en torno a mi relación con Kimmie y mi estado de ánimo iba vinculado con eso. Me he dado cuenta de que, independientemente de los sentimientos que me surgían, el miedo y la constante ansiedad que tenía dentro eran por miedo al cambio.",
-    tension:"Al abrazar el cambio nos exponemos a nuevas sensaciones y retos. Conocemos un nuevo YO que antes no conocíamos — un YO más o menos capaz de enfrentar lo nuevo.",
-    finalidad:"Autoconocimiento",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:6,tipo:"libro",libro:"El hombre en busca del sentido",autor:"Viktor Frankl",
-    fecha:"2024-01-25",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:10,
-    tags:["Sentido","Sufrimiento","Propósito","Logoterapia","Libertad interior","Resiliencia"],
-    tituloRef:"Entre el estímulo y la respuesta siempre hay un espacio — ahí vive tu libertad",
-    reflexion:"Frankl sobrevivió Auschwitz y otros tres campos de concentración. Su conclusión: quienes resistían no eran los físicamente más fuertes, sino los que encontraban un sentido a su sufrimiento. La logoterapia nace de esa observación — el ser humano está motivado, ante todo, por la búsqueda de significado.\n\nLo más poderoso del libro: la libertad interior no te la puede quitar nadie. Puedes perder todo material y físicamente, pero siempre conservas la capacidad de elegir cómo responder a lo que te ocurre.",
-    cita:"Al hombre se le puede arrebatar todo salvo una cosa: la última de las libertades humanas — la elección de la actitud personal ante un conjunto de circunstancias.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:7,tipo:"libro",libro:"La bailarina de Auschwitz",autor:"Edith Eger",
-    fecha:"2024-02-18",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Trauma","Resiliencia","Perdón","Supervivencia","Libertad","Psicología"],
-    tituloRef:"La prisión más cruel no tiene rejas — es la que construimos con nuestros propios pensamientos",
-    reflexion:"Edith Eger, superviviente del Holocausto, bailó para Mengele en Auschwitz mientras imaginaba que lo hacía en el Teatro de Ópera de Budapest. Esa capacidad de crear un mundo interior libre, incluso en el infierno, es el núcleo del libro.\n\nDécadas después, ya como psicóloga, descubrió que la verdadera liberación no llegó al salir del campo sino al perdonar — no en beneficio de sus verdugos, sino en el propio. El perdón como acto de liberación personal, no de justificación del daño.",
-    cita:"No podemos elegir lo que nos ocurre, pero siempre podemos elegir cómo respondemos.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:8,tipo:"libro",libro:"Las 48 leyes del poder",autor:"Robert Greene",
-    fecha:"2024-03-07",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:8,
-    tags:["Poder","Estrategia","Historia","Liderazgo","Influencia","Política"],
-    tituloRef:"El poder no se pide ni se merece — se construye con estrategia y paciencia",
-    reflexion:"Greene analiza, a través de cientos de ejemplos históricos, los patrones repetitivos que determinan quién obtiene y mantiene el poder. Cada ley está ilustrada con casos reales de figuras como Maquiavelo, Luis XIV o Richelieu.\n\nEl libro es más descriptivo que prescriptivo: no te dice que seas cruel, sino que entiendas cómo funciona el poder para no ser víctima de él. La ignorancia de estas dinámicas no te protege — te hace vulnerable.",
-    cita:"El poder es un juego social. Para dominar ese juego debes ser capaz de estudiar y entender a las personas.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Pensamiento y decisiones",orden:null,notas:""
-  },
-  {
-    id:9,tipo:"libro",libro:"Hábitos atómicos",autor:"James Clear",
-    fecha:"2024-04-14",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Hábitos","Disciplina","Sistemas","Mejora continua","Identidad","Cambio"],
-    tituloRef:"No son los grandes gestos sino los pequeños hábitos diarios los que construyen quién eres",
-    reflexion:"Clear propone que la mejora del 1% diario genera resultados exponenciales a largo plazo — el problema no es que queramos demasiado, sino que lo queremos demasiado pronto. Los hábitos se construyen encadenando señal, antojo, respuesta y recompensa.\n\nLo más poderoso: el cambio real viene de cambiar la identidad, no los resultados. No 'quiero dejar de fumar' sino 'soy una persona que no fuma'. Cada hábito es un voto por el tipo de persona que decides ser.",
-    cita:"Cada acción que tomas es un voto por el tipo de persona que deseas convertirte.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Productividad",orden:null,notas:""
-  },
-  {
-    id:10,tipo:"libro",libro:"Si lo crees, lo creas",autor:"Brian Tracy",
-    fecha:"2024-05-22",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:7,
-    tags:["Mentalidad","Creencias","Éxito","Autoconfianza","Visualización","Desarrollo personal"],
-    tituloRef:"Tus creencias sobre lo que es posible determinan el límite de lo que puedes lograr",
-    reflexion:"Tracy argumenta que la mente subconsciente no distingue entre lo real y lo vivido con intensidad emocional. Tus creencias limitantes son el único techo real — y son modificables deliberadamente.\n\nEl libro es una guía práctica de reprogramación mental: afirmaciones, visualización y acción coherente. La clave es la congruencia entre lo que piensas, lo que dices y lo que haces.",
-    cita:"Eres lo que piensas la mayor parte del tiempo.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:11,tipo:"libro",libro:"Burlar al diablo",autor:"Napoleon Hill",
-    fecha:"2024-06-09",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:8,
-    tags:["Miedo","Control mental","Éxito","Deriva","Disciplina","Propósito"],
-    tituloRef:"El mayor enemigo no es la mala suerte — es la deriva: dejar que otros piensen por ti",
-    reflexion:"Hill escribió este libro en 1938 pero fue publicado póstumo en 2011. En forma de diálogo con 'el diablo', revela los mecanismos que nos mantienen atrapados: el miedo, la duda, la postergación y, sobre todo, la deriva — vivir sin propósito definido, dejándose llevar por el entorno.\n\nLa idea central: el 98% de las personas son 'drifters' que piensan en grupo en lugar de pensar por sí mismas. Solo el 2% tiene objetivos claros y actúa con independencia.",
-    cita:"La hipnosis de masa es el arma más poderosa. Hace que la gente piense en grupo en lugar de pensar por sí misma.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:12,tipo:"libro",libro:"Rompe la barrera del no",autor:"Chris Voss y Tahl Raz",
-    fecha:"2024-07-31",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Negociación","Comunicación","Empatía táctica","Persuasión","FBI","Influencia"],
-    tituloRef:"Negociar no es vencer al otro — es conseguir que el otro sienta que él también ganó",
-    reflexion:"Voss, ex negociador jefe del FBI, desmonta la negociación racional de Harvard y propone un enfoque basado en inteligencia emocional. Sus herramientas clave: el etiquetado emocional ('parece que te sientes…'), el espejo y el 'no' como herramienta de apertura.\n\nLo contraintuitivo: buscar el 'no' antes que el 'sí' genera acuerdos más sólidos porque el otro se siente en control. La empatía táctica no es ser amable — es entender tan bien al otro que puedes anticipar sus movimientos.",
-    cita:"El 'no' no es el final de la negociación. Es el principio.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Pensamiento y decisiones",orden:null,notas:""
-  },
-  {
-    id:13,tipo:"libro",libro:"No me puedes lastimar",autor:"David Goggins",
-    fecha:"2024-08-16",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Disciplina","Resiliencia","Límites","Dureza mental","Superación","Mente"],
-    tituloRef:"Solo has usado el 40% de tu capacidad — la mente se rinde mucho antes que el cuerpo",
-    reflexion:"Goggins pasó de ser obeso, con una infancia traumática y una vida sin rumbo, a convertirse en Navy SEAL, completar ultramaratones y batir récords mundiales. El libro no es autoayuda convencional — es brutalmente honesto sobre el dolor que requiere el crecimiento real.\n\nSu concepto más poderoso: la 'regla del 40%'. Cuando tu mente dice que ya no puedes más, solo has llegado al 40% de tu capacidad real. El otro 60% está bloqueado por el confort y el miedo al malestar.",
-    cita:"Los seres humanos cambian cuando el dolor de seguir igual supera al miedo de cambiar.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:14,tipo:"libro",libro:"Fahrenheit 451",autor:"Ray Bradbury",
-    fecha:"2024-09-28",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Distopía","Censura","Conocimiento","Pensamiento crítico","Sociedad","Libertad"],
-    tituloRef:"Una sociedad que quema libros no destruye papel — destruye la capacidad de pensar",
-    reflexion:"En un futuro donde los libros están prohibidos y los bomberos los queman, Montag comienza a cuestionarse el sistema al que pertenece. Bradbury no alerta sobre la censura gubernamental sino sobre la autocensura cultural: la comodidad que lleva a preferir el entretenimiento vacío a la reflexión profunda.\n\nEl libro tiene una vigencia inquietante: las pantallas que entumecen, el contenido rápido que sustituye al pensamiento lento, la velocidad que impide la contemplación.",
-    cita:"No es necesario quemar libros para destruir una cultura. Basta con conseguir que la gente deje de leerlos.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:15,tipo:"libro",libro:"1984",autor:"George Orwell",
-    fecha:"2024-10-11",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:10,
-    tags:["Distopía","Control","Vigilancia","Totalitarismo","Libertad","Verdad"],
-    tituloRef:"El poder más absoluto no controla los cuerpos — controla lo que la gente es capaz de pensar",
-    reflexion:"Orwell construye un régimen donde la realidad misma es maleable: el 'doblepensar' permite creer simultáneamente en dos verdades contradictorias. El Gran Hermano no necesita que lo ames — necesita que no puedas ni imaginar que existe otra forma de vida.\n\nPublicado en 1949, anticipa con precisión los mecanismos del totalitarismo moderno: vigilancia constante, reescritura del pasado, lenguaje como herramienta de control del pensamiento. La 'neolengua' — reducir el vocabulario para reducir la capacidad de pensar — es más relevante hoy que nunca.",
-    cita:"La guerra es la paz. La libertad es la esclavitud. La ignorancia es la fuerza.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:16,tipo:"libro",libro:"El extranjero",autor:"Albert Camus",
-    fecha:"2024-11-24",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Absurdo","Existencialismo","Indiferencia","Identidad","Muerte","Filosofía"],
-    tituloRef:"Meursault no es un monstruo — es el espejo que refleja lo que preferimos no ver de nosotros mismos",
-    reflexion:"Meursault no llora en el entierro de su madre, acepta una relación con la misma indiferencia que un asesinato y su propia condena a muerte. Camus no lo presenta como un sociópata sino como alguien que rechaza fingir emociones que no siente — la hipocresía social como crimen mayor que el suyo.\n\nEl absurdo camusiano: la vida no tiene un significado predefinido, y la única respuesta honesta no es el suicidio ni la fe ciega, sino la rebelión — vivir plenamente a pesar de que todo es absurdo.",
-    cita:"Siempre había vivido de tal manera que no podía imaginarme ningún otro desenlace.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:17,tipo:"libro",libro:"Invicto",autor:"Marcos Vázquez",
-    fecha:"2024-12-05",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:8,
-    tags:["Estoicismo","Disciplina","Salud","Productividad","Mente","Rendimiento"],
-    tituloRef:"La vida que quieres requiere primero construir el cuerpo y la mente que pueden sostenerla",
-    reflexion:"Vázquez integra estoicismo, neurociencia y entrenamiento físico en un sistema práctico de alto rendimiento. El estoicismo no como doctrina filosófica abstracta sino como protocolo diario: control de lo que depende de ti, indiferencia deliberada ante lo que no.\n\nEl libro tiene una estructura clara: primero el cuerpo (sueño, ejercicio, nutrición), luego la mente (estoicismo, foco, gestión emocional), luego la tribu (relaciones, propósito social). Es un manual sin florituras.",
-    cita:"No busques una vida más fácil. Construye una persona más fuerte.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:18,tipo:"libro",libro:"El monje que vendió su Ferrari",autor:"Robin Sharma",
-    fecha:"2025-01-19",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:7,
-    tags:["Propósito","Espiritualidad","Hábitos","Simplicicidad","Éxito","Felicidad"],
-    tituloRef:"El éxito exterior sin paz interior no es éxito — es una ilusión cara",
-    reflexion:"Julian Mantle, abogado de éxito, sufre un infarto en pleno juicio. Vende todo y viaja al Himalaya, donde los monjes le enseñan siete virtudes para vivir con propósito. Es una fábula, no un manual técnico — su valor está en los principios, no en los detalles.\n\nLo más recordable: el 'jardín de la mente' como metáfora del pensamiento. Solo puedes cultivar lo que siembras deliberadamente. Los pensamientos negativos, como las malas hierbas, crecen solos si no los arrancas.",
-    cita:"El autodominio es el ADN del dominio de la vida.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:19,tipo:"libro",libro:"El arte de la guerra",autor:"Sun Tzu",
-    fecha:"2025-02-08",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:9,
-    tags:["Estrategia","Liderazgo","Táctica","Poder","Conflicto","Historia"],
-    tituloRef:"La victoria real se gana antes de entrar en batalla — en la preparación, el conocimiento y la paciencia",
-    reflexion:"Escrito hace 2.500 años, sigue siendo el tratado estratégico más leído del mundo. Su premisa central: el general supremo gana sin luchar, porque ha creado las condiciones para que el enemigo no tenga opción.\n\nAplicado fuera del campo de batalla habla de autoconocimiento ('conócete a ti mismo'), adaptabilidad ('el agua toma la forma del recipiente') y economía de medios. Es filosófico tanto como táctico.",
-    cita:"Conoce a tu enemigo y conócete a ti mismo; en cien batallas nunca saldrás derrotado.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Pensamiento y decisiones",orden:null,notas:""
-  },
-  {
-    id:20,tipo:"libro",libro:"La vaca púrpura",autor:"Seth Godin",
-    fecha:"2025-03-23",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:8,
-    tags:["Marketing","Innovación","Diferenciación","Negocios","Creatividad","Marca"],
-    tituloRef:"En un mundo saturado de ruido, solo lo verdaderamente notable merece atención",
-    reflexion:"Godin parte de una imagen simple: si viajas por el campo y ves vacas, dejan de interesarte. Pero si una fuera púrpura, la mirarías dos veces. Las empresas y personas que prosperan no hacen bien lo normal — hacen algo que nadie más hace.\n\nLa lección clave: intentar llegar a todo el mundo es garantía de no llegar a nadie. El marketing moderno no se gana con presupuesto sino con ideas lo suficientemente buenas como para que la gente las comparta porque quiere.",
-    cita:"Ser seguro es arriesgado. Lo que es notable es lo que funciona.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Marketing",orden:null,notas:""
-  },
-  {
-    id:21,tipo:"libro",libro:"Psicología oscura",autor:"Robert Clear",
-    fecha:"2025-04-12",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:6,
-    tags:["Manipulación","Influencia","Psicología oscura","Persuasión","Control","Defensa"],
-    tituloRef:"Entender cómo funciona la manipulación es la mejor defensa contra ella",
-    reflexion:"El libro cataloga las técnicas de influencia y manipulación más utilizadas: gaslighting, amor bombardero, triangulación y control emocional. Lo más útil es aprender a identificar estos patrones en relaciones y entornos laborales.\n\nNo está escrito para enseñar a manipular sino para blindarse ante quien ya lo hace. Reconocer los patrones temprano es la diferencia entre caer en ellos y salir a tiempo.",
-    cita:"El primer paso para no ser manipulado es saber exactamente cómo funciona la manipulación.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:22,tipo:"libro",libro:"Técnicas secretas de manipulación",autor:"Robert Clear",
-    fecha:"2025-05-30",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:6,
-    tags:["Manipulación","Persuasión","Control mental","Influencia","Defensa","Psicología"],
-    tituloRef:"Conocer las técnicas de control mental no es poder usarlas — es poder resistirlas",
-    reflexion:"Un catálogo práctico de técnicas de influencia psicológica: desde el anclaje emocional y la escasez artificial hasta la disonancia cognitiva como herramienta de control. El libro es útil sobre todo como inventario defensivo.\n\nLeyéndolo con distancia crítica, lo más valioso es aprender a detectar cuándo alguien está usando estas técnicas contigo — en publicidad, política o relaciones personales.",
-    cita:"La conciencia es el antídoto más efectivo contra cualquier forma de manipulación.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:23,tipo:"libro",libro:"El arte de la seducción",autor:"Robert Greene",
-    fecha:"2025-06-15",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:8,
-    tags:["Seducción","Poder","Relaciones","Influencia","Psicología","Atracción"],
-    tituloRef:"La seducción es el arte de crear deseo — y el deseo siempre se construye desde la ausencia, no desde la disponibilidad",
-    reflexion:"Greene analiza nueve arquetipos de seductores a lo largo de la historia — desde Cleopatra hasta Casanova — y extrae los principios que los hacen irresistibles. La seducción no es manipulación vulgar; es la capacidad de hacer que el otro desee lo que tú quieres darle.\n\nEl libro trabaja la psicología del deseo: la atracción se alimenta de tensión, misterio y escasez calculada. Estar siempre disponible mata el deseo; la distancia estratégica lo mantiene vivo.",
-    cita:"Lo que crea deseo no es la posesión sino la posibilidad.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:24,tipo:"libro",libro:"12 Reglas para vivir",autor:"Jordan Peterson",
-    fecha:"2025-07-08",estado:"terminado",progreso:100,dificultad:"Densa",puntuacion:9,
-    tags:["Responsabilidad","Orden","Significado","Filosofía","Psicología","Valores"],
-    tituloRef:"El caos no se combate huyendo de él — se integra asumiéndote responsable de tu propia vida",
-    reflexion:"Peterson teje psicología junguiana, mitología, biología evolutiva y filosofía occidental en torno a doce reglas concretas. El hilo conductor: el orden y el caos no son opuestos que hay que eliminar sino polaridades que hay que integrar. Una vida significativa vive en la frontera entre ambos.\n\nSu regla más impactante no es la más elaborada: 'Mantenlo todo en orden antes de criticar al mundo'. El libro exige responsabilidad personal en lugar de explicaciones externas para el malestar propio.",
-    cita:"Compara quién eres con quién podrías ser. No te compares con los demás.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Psicología",orden:null,notas:""
-  },
-  {
-    id:25,tipo:"libro",libro:"Siddhartha",autor:"Hermann Hesse",
-    fecha:"2025-08-22",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Espiritualidad","Búsqueda","Budismo","Sabiduría","Identidad","Autoconocimiento"],
-    tituloRef:"La sabiduría no se transmite — solo se puede vivir",
-    reflexion:"Siddhartha abandona las enseñanzas del propio Buda no porque sean falsas, sino porque ninguna doctrina puede sustituir a la experiencia directa. El camino hacia la iluminación es inevitablemente personal — lo que sirvió a otro no puede servirte igual a ti.\n\nLa novela es corta pero densa. El río como metáfora de la totalidad del tiempo — pasado, presente y futuro fluyendo simultáneamente — es una de las imágenes más hermosas de la literatura del siglo XX.",
-    cita:"La sabiduría que intenta comunicarse siempre suena como necedad.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:26,tipo:"libro",libro:"El túnel",autor:"Ernesto Sábato",
-    fecha:"2025-09-14",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:8,
-    tags:["Soledad","Obsesión","Existencialismo","Culpa","Psicología","Novela negra"],
-    tituloRef:"La soledad absoluta no es la ausencia de otros — es la certeza de que nadie puede entenderte del todo",
-    reflexion:"Juan Pablo Castel confiesa desde la primera página que mató a María Iribarne. La novela es la reconstrucción obsesiva de su lógica interna: progresivamente más hermética e irrefutable para él mismo, progresivamente más aterradora para el lector.\n\nSábato retrata con precisión cómo la mente puede construir un sistema de pensamiento perfectamente coherente desde adentro y absolutamente autodestructivo desde afuera. Un libro sobre la incomunicación radical.",
-    cita:"Hay una sola cosa que nadie puede hacer por ti: sentir lo que tú sientes.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:27,tipo:"libro",libro:"La muerte de Iván Ilich",autor:"León Tolstói",
-    fecha:"2025-10-20",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:10,
-    tags:["Muerte","Autenticidad","Vida","Existencialismo","Propósito","Miedo"],
-    tituloRef:"La única pregunta que importa antes de morir: ¿viví como yo quería o como los demás esperaban?",
-    reflexion:"Iván Ilich ha hecho todo bien: carrera exitosa, matrimonio apropiado, casa decorada como la de sus iguales. Al enfermarse de muerte, descubre que toda esa vida correcta era también, en algún sentido profundo, falsa. El terror más grande no es el dolor físico sino la sospecha de que desperdició su vida.\n\nTolstói comprime en pocas páginas lo que la filosofía existencialista tardaría décadas en articular. El único que lo trata con humanidad genuina es Gerasim, el sirviente campesino — alguien sin pretensiones, sin vergüenza ante la muerte.",
-    cita:"¿Y si toda mi vida, toda mi vida consciente, no fue lo que debía ser?",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:28,tipo:"libro",libro:"El marciano",autor:"Andy Weir",
-    fecha:"2026-05-29",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:9,
-    tags:["Supervivencia","Ciencia","Ingenio","Resiliencia","Humor","Espacio"],
-    tituloRef:"Cuando no puedes controlar dónde estás, puedes controlar cómo usas lo que tienes",
-    reflexion:"Mark Watney queda abandonado en Marte y tiene que sobrevivir con los recursos de una misión de 31 días durante más de 500. Weir hizo los cálculos reales, lo que le da una verosimilitud fascinante — no es ciencia ficción especulativa sino ingeniería de supervivencia.\n\nLo que hace que el libro funcione no es el drama sino el tono: Watney enfrenta cada crisis con ingenio y humor. Un recordatorio de que el humor y la resolución de problemas no son opuestos a la seriedad — son las herramientas más efectivas para la supervivencia.",
-    cita:"En algún momento, todo sale mal. Decides si eso te define o si decides seguir adelante.",
-    vida:"",tension:"",finalidad:"Ocio",categoria:"Novela",orden:null,notas:""
-  },
-  {
-    id:50,tipo:"libro",libro:"El sutil arte de que todo te importe una mierda",autor:"Mark Manson",
-    fecha:"2026-07-14",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:null,
-    tags:["Mentalidad","Prioridades","Responsabilidad","Valores","Desarrollo personal","Autenticidad"],
-    tituloRef:"No todo merece tu energía — la clave está en elegir conscientemente qué te importa y qué no",
-    reflexion:"Manson desmonta la positividad forzada de la autoayuda convencional: no se trata de que todo salga bien, sino de elegir intencionalmente los problemas que estás dispuesto a enfrentar. La felicidad no es la ausencia de problemas; es tener los problemas correctos.\n\nEl argumento central: tenemos un límite de preocupaciones disponibles, y cómo los asignamos define la calidad de nuestra vida. Preocuparte por cosas triviales deja sin capacidad para lo que realmente importa. La madurez es la habilidad de decir 'eso no me importa' sin culpa.",
-    cita:"No aspires a tener una vida sin problemas. Aspira a tener mejores problemas.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Desarrollo personal",orden:null,notas:""
-  },
-  {
-    id:51,tipo:"libro",libro:"Ikigai",autor:"Héctor García y Francesc Miralles",
-    fecha:"2026-07-12",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:null,
-    tags:["Propósito","Longevidad","Filosofía japonesa","Plenitud","Hábitos","Comunidad"],
-    tituloRef:"El secreto de la longevidad y la plenitud no está en retirarse — está en nunca dejar de tener un propósito",
-    reflexion:"Ikigai es el concepto japonés que define la razón de levantarse cada mañana: la intersección entre lo que amas, lo que se te da bien, lo que el mundo necesita y lo que te pueden pagar. No es un destino sino una dirección.\n\nEl libro estudia a los centenarios de Okinawa — la zona del mundo con mayor esperanza de vida — y extrae sus patrones: propósito claro, comunidad fuerte, movimiento constante y alimentación moderada. La conclusión más poderosa: la jubilación como cese total de actividad no existe en su vocabulario.",
-    cita:"Solo los que se mueven siempre hacia lo que les da sentido consiguen vivir con plenitud hasta el final.",
-    vida:"",tension:"",finalidad:"Autoconocimiento",categoria:"Filosofía",orden:null,notas:""
-  },
-  {
-    id:52,tipo:"libro",libro:"El arte de pensar",autor:"José Carlos Ruiz",
-    fecha:"2026-06-12",estado:"leyendo",progreso:55,dificultad:"Moderada",puntuacion:null,
-    tags:["Sesgos cognitivos","Pensamiento crítico","Lógica","Decisiones","Racionalidad","Psicología"],
-    tituloRef:"Pensar bien no es un talento innato — es una técnica filosófica que cualquiera puede aprender",
-    reflexion:"Ruiz rescata la filosofía como herramienta práctica para el pensamiento cotidiano. El libro enseña a identificar falacias, distinguir hechos de opiniones, construir argumentos sólidos y reconocer cuándo un razonamiento nos está fallando.\n\nLa tesis central: la falta de pensamiento crítico no es una cuestión de inteligencia sino de entrenamiento. La filosofía no es una disciplina académica reservada para unos pocos — es un conjunto de instrumentos concretos para pensar con más rigor y menos confusión ante cualquier problema.",
-    cita:"No hay pensamiento sin filosofía. Solo pensamiento que no sabe que usa filosofía.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Pensamiento y decisiones",orden:null,notas:""
-  },
-  {
-    id:53,tipo:"articulo",libro:"El efecto espectador",autor:"Darley & Latané",
-    fecha:"2026-08-25",estado:"terminado",progreso:100,dificultad:"Accesible",puntuacion:null,
-    tags:["Psicología social","Responsabilidad","Comportamiento","Emergencias","Sesgos","Dilución"],
-    tituloRef:"La presencia de otros no garantiza que alguien ayude — al contrario, puede ser exactamente lo que lo impide",
-    reflexion:"El efecto espectador es uno de los fenómenos más contraintuitivos de la psicología social: cuantas más personas presencian una emergencia, menor es la probabilidad de que alguna actúe. La responsabilidad se diluye entre la multitud — si todos pueden intervenir, nadie siente que debe ser él quien lo haga.\n\nDocumentado por Darley y Latané tras el caso Kitty Genovese (1964), el fenómeno explica que la inacción no refleja indiferencia sino un error de cálculo colectivo. El antídoto es específico: en una emergencia, señala a una persona concreta, mírala a los ojos y pídele ayuda directamente. La responsabilidad difusa se vuelve individual solo cuando se nombra.",
-    cita:"Cuando todo el mundo es responsable, nadie lo es.",
-    vida:"",tension:"",finalidad:"Formación",categoria:"Psicología",orden:null,notas:""
-  }
-];
-
-let libros=[], filtroActivo="Todos", filtroFinalidad="", filtroCategoria="", filtroEstadoLib="", filtroDificultad="";
-let mostrarLectura=false, busqueda="", isAdmin=false, sortDesc=true, editandoId=null, _autoOpen=false;
-if(new URLSearchParams(location.search).get("leer")){document.body.style.cssText="opacity:0;transition:opacity .15s ease";}
-
-/* ── FIREBASE STORAGE ── */
-function guardarEnStorage() {
-  const obj={};
-  libros.forEach(l=>{obj[l.id]=l;});
-  db.ref("libros").set(obj);
-}
-
-function runMigraciones(existing){
-  db.ref("migrations/m01_pendiente_a_proximo").once("value").then(snap=>{
-    if(snap.val())return;
-    const books=existing?Object.values(existing):[];
-    const updates={};
-    books.forEach(l=>{if(l.estado==="pendiente")updates[`libros/${l.id}/estado`]="proximo";});
-    const titulos=new Set(books.map(l=>l.libro));
-    let nextId=books.reduce((m,l)=>Math.max(m,+l.id||0),0)+1;
-    const nuevosPend=[
-      {libro:"Manual de vida",autor:"Epicteto",tituloRef:"El estoicismo práctico: distinguir lo que depende de ti de lo que no",categoria:"Filosofía",dificultad:"Moderada",tags:["Estoicismo","Filosofía","Libertad interior","Disciplina","Virtud"]},
-      {libro:"Así habló Zaratustra",autor:"Friedrich Nietzsche",tituloRef:"La filosofía como poesía: el eterno retorno, el superhombre y la muerte de Dios",categoria:"Filosofía",dificultad:"Densa",tags:["Filosofía","Nietzsche","Nihilismo","Existencialismo","Poder"]},
-      {libro:"El hombre rebelde",autor:"Albert Camus",tituloRef:"La rebelión como respuesta filosófica al absurdo y a los totalitarismos del siglo XX",categoria:"Filosofía",dificultad:"Densa",tags:["Absurdo","Rebelión","Filosofía","Camus","Política"]},
-      {libro:"Psicología de las masas",autor:"Sigmund Freud",tituloRef:"Cómo el individuo pierde su identidad crítica al fundirse con el grupo",categoria:"Psicología",dificultad:"Moderada",tags:["Psicología","Freud","Masas","Identidad","Inconsciente"]}
-    ];
-    nuevosPend.forEach(n=>{
-      if(!titulos.has(n.libro)){
-        updates[`libros/${nextId}`]={id:nextId,tipo:"libro",libro:n.libro,autor:n.autor,fecha:"",estado:"pendiente",progreso:0,dificultad:n.dificultad,puntuacion:null,tags:n.tags,tituloRef:n.tituloRef,reflexion:"",cita:"",vida:"",tension:"",finalidad:"Formación",categoria:n.categoria,orden:null,notas:""};
-        nextId++;
-      }
-    });
-    const done=()=>db.ref("migrations/m01_pendiente_a_proximo").set(true);
-    if(Object.keys(updates).length)db.ref().update(updates).then(done);else done();
-  });
-  db.ref("migrations/m02_sync_datos_iniciales").once("value").then(snap=>{
-    if(snap.val())return;
-    const updates={};
-    DATOS_INICIALES.filter(l=>l.id>=6).forEach(l=>{updates[`libros/${l.id}`]=l;});
-    const done=()=>db.ref("migrations/m02_sync_datos_iniciales").set(true);
-    if(Object.keys(updates).length)db.ref().update(updates).then(done);else done();
-  });
-  db.ref("migrations/m03_fix_fechas_reales").once("value").then(snap=>{
-    if(snap.val())return;
-    const updates={
-      "libros/28/fecha":"2026-05-29",
-      "libros/50/fecha":"2026-07-14",
-      "libros/51/fecha":"2026-07-12",
-      "libros/52/fecha":"2026-06-12"
-    };
-    db.ref().update(updates).then(()=>db.ref("migrations/m03_fix_fechas_reales").set(true));
-  });
-  db.ref("migrations/m04_fix_autor_arte_pensar").once("value").then(snap=>{
-    if(snap.val())return;
-    db.ref("libros/52/autor").set("José Carlos Ruiz").then(()=>db.ref("migrations/m04_fix_autor_arte_pensar").set(true));
-  });
-  db.ref("migrations/m06_add_efecto_espectador").once("value").then(snap=>{
-    if(snap.val())return;
-    const l=DATOS_INICIALES.find(x=>x.id===53);
-    if(l)db.ref("libros/53").once("value").then(s=>{if(!s.val())db.ref("libros/53").set(l);}).then(()=>db.ref("migrations/m06_add_efecto_espectador").set(true));
-    else db.ref("migrations/m06_add_efecto_espectador").set(true);
-  });
-  db.ref("migrations/m07_force_efecto_espectador").once("value").then(snap=>{
-    if(snap.val())return;
-    const l=DATOS_INICIALES.find(x=>x.id===53);
-    if(l)db.ref("libros/53").set(l).then(()=>db.ref("migrations/m07_force_efecto_espectador").set(true));
-    else db.ref("migrations/m07_force_efecto_espectador").set(true);
-  });
-  db.ref("migrations/m08_epicteto_reflexion").once("value").then(snap=>{
-    if(snap.val())return;
-    db.ref("libros").once("value").then(s=>{
-      const books=s.val()?Object.values(s.val()):[];
-      const ep=books.find(b=>b.autor&&b.autor.toLowerCase().includes("epicteto"));
-      if(!ep){db.ref("migrations/m08_epicteto_reflexion").set(true);return;}
-      db.ref("libros/"+ep.id).update({
-        tituloRef:"La libertad no está en cambiar el mundo — está en elegir a qué le das poder sobre ti",
-        reflexion:"Epicteto divide todo en dos categorías: lo que depende de nosotros (juicios, deseos, impulsos) y lo que no depende (el cuerpo, la reputación, el cargo, la muerte). El error que genera sufrimiento es ocuparse de lo segundo como si dependiera de uno.\n\nEl Enquiridión es un entrenamiento de atención: cada vez que algo te perturba, pregunta si está en tu mano o no. Si no lo está, no merece un minuto de preocupación. Si lo está, actúa. La tranquilidad no es apatía — es la consecuencia de dejar de luchar contra lo que no puedes controlar. Epicteto era esclavo. Su libertad interior era absoluta.",
-        cita:"No busques que lo que ocurre ocurra como tú quieres. Desea que lo que ocurre ocurra como ocurre, y serás feliz.",
-        tags:["Estoicismo","Control","Libertad interior","Virtud","Aceptación","Filosofía"],
-        dificultad:"Accesible",
-        finalidad:"Autoconocimiento",
-        categoria:"Filosofía"
-      }).then(()=>db.ref("migrations/m08_epicteto_reflexion").set(true));
-    });
-  });
-  db.ref("migrations/m10_cansancio_leyendo").once("value").then(snap=>{
-    if(snap.val())return;
-    db.ref("libros").once("value").then(s=>{
-      const b=(s.val()?Object.values(s.val()):[]).find(x=>(x.libro||"").toLowerCase().includes("sociedad del cansancio"));
-      if(b)db.ref("libros/"+b.id).update({estado:"leyendo",progreso:71}).then(()=>db.ref("migrations/m10_cansancio_leyendo").set(true));
-    });
-  });
-  db.ref("migrations/m09_sociedad_cansancio").once("value").then(snap=>{
-    if(snap.val())return;
-    db.ref("libros").once("value").then(s=>{
-      const books=s.val()?Object.values(s.val()):[];
-      const done=()=>db.ref("migrations/m09_sociedad_cansancio").set(true);
-      if(books.some(b=>(b.libro||"").toLowerCase().includes("sociedad del cansancio"))){done();return;}
-      const id=books.reduce((m,b)=>Math.max(m,+b.id||0),0)+1;
-      db.ref("libros/"+id).set({
-        id,tipo:"libro",libro:"La sociedad del cansancio",autor:"Byung-Chul Han",
-        fecha:"2026-09-22",estado:"leyendo",progreso:71,dificultad:"Moderada",puntuacion:null,
-        tags:["Sociedad","Rendimiento","Introspección","Profundidad","Vínculos","Filosofía"],
-        tituloRef:"Tener más opciones no significa necesariamente ser más libre",
-        reflexion:"Exceso de posibilidades y dificultad para vincularse\nLa sociedad moderna ofrece tantas opciones, estímulos y posibilidades que comprometerse profundamente con una sola cosa, persona o camino se vuelve más difícil. Cuando siempre parece existir una alternativa mejor, los vínculos pueden volverse más frágiles y provisionales. Esa falta de arraigo externo puede terminar generando también una pérdida de conexión con uno mismo.\n\nInmediatez, estímulo constante y pérdida de introspección\nEl individuo moderno vive orientado hacia lo rápido, lo inmediato y lo efímero. El exceso de estímulos puede funcionar como una forma de evitar el silencio, el aburrimiento y el encuentro con uno mismo.\n\nEl exceso de actividad también puede ser una forma de huida\nEstar ocupado, mejorar, producir, entrenar, trabajar o aprender puede parecer siempre positivo, pero también puede convertirse en una forma de no detenerse a pensar.\n\nProfundidad frente a sustitución constante\nLa abundancia de opciones favorece probar muchas cosas, pero puede dificultar permanecer el tiempo suficiente como para construir profundidad.",
-        cita:"",
-        vida:"Tener más opciones no significa necesariamente ser más libre. A veces, elegir menos y profundizar más da más sentido que mantener abiertas infinitas posibilidades.\n\nSi necesito estar constantemente entretenido, ocupado o estimulado, quizá no estoy viviendo más intensamente, sino evitando estar conmigo mismo.\n\nNo todo lo que parece desarrollo es crecimiento real. También tengo que ser capaz de parar sin sentir culpa ni creer que estoy perdiendo el tiempo.\n\nNo siempre necesito algo nuevo. A veces necesito sostener, profundizar y tolerar la incomodidad suficiente como para que algo llegue a tener verdadero valor.",
-        tension:"",finalidad:"Autoconocimiento",categoria:"Filosofía",orden:null,notas:""
-      }).then(done);
-    });
-  });
-  db.ref("migrations/m05_fix_reflexion_arte_pensar").once("value").then(snap=>{
-    if(snap.val())return;
-    const updates={
-      "libros/52/tituloRef":"Pensar bien no es un talento innato — es una técnica filosófica que cualquiera puede aprender",
-      "libros/52/reflexion":"Ruiz rescata la filosofía como herramienta práctica para el pensamiento cotidiano. El libro enseña a identificar falacias, distinguir hechos de opiniones, construir argumentos sólidos y reconocer cuándo un razonamiento nos está fallando.\n\nLa tesis central: la falta de pensamiento crítico no es una cuestión de inteligencia sino de entrenamiento. La filosofía no es una disciplina académica reservada para unos pocos — es un conjunto de instrumentos concretos para pensar con más rigor y menos confusión ante cualquier problema.",
-      "libros/52/cita":"No hay pensamiento sin filosofía. Solo pensamiento que no sabe que usa filosofía."
-    };
-    db.ref().update(updates).then(()=>db.ref("migrations/m05_fix_reflexion_arte_pensar").set(true));
-  });
-}
-
-/* Escrituras de sincronización: solo con sesión iniciada (reglas ".write": "auth != null") */
-let _sincronizado=false;
-function sincronizarDatos(){
-  if(_sincronizado)return;_sincronizado=true;
-  db.ref("libros").once("value").then(snapshot=>{
-    const existing=snapshot.val()||{};
-    const toAdd={};
-    DATOS_INICIALES.forEach(l=>{if(!existing[l.id])toAdd[l.id]=l;});
-    if(Object.keys(toAdd).length)db.ref("libros").update(toAdd);
-    runMigraciones(existing);
-  });
-}
-
-function cargarDesdeStorage() {
-  db.ref("libros").on("value",snap=>{
-    const data=snap.val();
-    libros=data?Object.values(data):[];
-    actualizarStats();renderFiltros();renderCards();actualizarAutocomplete();mostrarCitaAleatoria();
-    if(!_autoOpen){const p=new URLSearchParams(window.location.search).get("leer");if(p){_autoOpen=true;setTimeout(()=>abrirLeer(p),200);}}
-  });
-}
-
-/* ── UTILIDADES ── */
-const $=id=>document.getElementById(id);
-function txP(str){if(!str)return"";return str.split("\n\n").map(p=>`<p>${p.replace(/\n/g,"<br>")}</p>`).join("");}
-function fmtFecha(str){if(!str)return"";const[y,m,d]=str.split("-");const ms=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];return`${+d} ${ms[+m-1]} ${y}`;}
-function fmtFechaUI(str){if(!str)return"";return isAdmin?fmtFecha(str):str.split("-")[0];}
-function badgeClass(e){return{leyendo:"badge-leyendo",terminado:"badge-terminado",proximo:"badge-proximo",pendiente:"badge-pendiente"}[e]||"badge-proximo";}
-function badgeLabel(e){return{leyendo:"Leyendo",terminado:"Terminado",proximo:"Próximo",pendiente:"Pendiente"}[e]||e;}
-function tipoLabel(t){return{libro:"Libro",reflexion:"Reflexión",articulo:"Artículo",privado:"Privado"}[t]||t;}
-
-/* ── STATS ── */
-function actualizarStats(){
-  const act=l=>l.estado!=="proximo"&&l.estado!=="pendiente";
-  $("stat-libros").textContent=libros.filter(l=>l.tipo==="libro"&&act(l)).length;
-  $("stat-reflexiones").textContent=libros.filter(l=>l.tipo==="reflexion"&&act(l)).length;
-  $("stat-articulos").textContent=libros.filter(l=>l.tipo==="articulo"&&act(l)).length;
-}
-
-/* ── FILTROS TIPO ── */
-function renderFiltros(){
-  const FIJOS=["libro","reflexion","articulo"];
-  const enDatos=new Set(libros.map(l=>l.tipo));
-  const tipos=["Todos",...FIJOS.filter(t=>enDatos.has(t))];
-  if(isAdmin&&enDatos.has("privado"))tipos.push("privado");
-  const lbl={Todos:"Todos",libro:"Libros",reflexion:"Reflexiones",articulo:"Artículos",privado:"🔒 Privado"};
-  $("filtros-container").innerHTML=tipos.map(t=>`<button class="tipo-pill${t===filtroActivo?" activo":""}" onclick="setFiltro('${t}')">${lbl[t]||t}</button>`).join("");
-  $("filtros-select").innerHTML=tipos.map(t=>`<option value="${t}"${t===filtroActivo?" selected":""}>${lbl[t]||t}</option>`).join("");
-}
-
-function setFiltro(tipo){filtroActivo=tipo;renderFiltros();renderCards();}
-
-function toggleSort(){
-  sortDesc=!sortDesc;
-  $("sort-btn").textContent=sortDesc?"Reciente":"Antiguo";
-  renderCards();
-}
-
-function setBusqueda(val){busqueda=val.trim().toLowerCase();$("busqueda-clear").classList.toggle("visible",busqueda.length>0);renderCards();}
-function limpiarBusqueda(){$("busqueda-input").value="";busqueda="";$("busqueda-clear").classList.remove("visible");renderCards();}
-
-/* ── RENDER CARDS ── */
-function renderCards(){
-  const grid=$("cards-grid");
-  const FC={"Formación":"formacion","Autoconocimiento":"autoconocimiento","Ocio":"ocio"};
-
-  const lecturaCount=libros.filter(l=>l.estado==="proximo"||l.estado==="pendiente").length;
-  const togBtn=$("btn-toggle-lectura");
-  if(togBtn)togBtn.textContent=`📚 Lista de lectura (${lecturaCount}) ${mostrarLectura?"▲":"▼"}`;
-
-  const lecturaCards=(mostrarLectura&&(filtroActivo==="Todos"||filtroActivo==="libro"))
-    ?libros.filter(l=>l.estado==="proximo"||l.estado==="pendiente").sort((a,b)=>(a.orden||99)-(b.orden||99))
-    :[];
-
-  let lista=libros.filter(l=>{
-    if(l.estado==="proximo"||l.estado==="pendiente")return false;
-    if(filtroActivo!=="Todos"&&l.tipo!==filtroActivo)return false;
-    if(!isAdmin&&l.tipo==="privado")return false;
-    if(filtroFinalidad&&l.finalidad!==filtroFinalidad)return false;
-    if(filtroCategoria&&l.categoria!==filtroCategoria)return false;
-    if(filtroEstadoLib&&l.estado!==filtroEstadoLib)return false;
-    if(filtroDificultad&&l.dificultad!==filtroDificultad)return false;
-    return true;
-  }).slice().sort((a,b)=>{
-    const da=new Date(a.fecha||"1970-01-01"),db2=new Date(b.fecha||"1970-01-01");
-    return sortDesc?db2-da:da-db2;
-  });
-
-  if(busqueda){lista=lista.filter(l=>{const h=[l.tituloRef,l.autor,l.libro,l.reflexion,l.categoria,...(l.tags||[])].join(" ").toLowerCase();return h.includes(busqueda);});}
-
-  if(!lista.length&&!lecturaCards.length){
-    const msg=busqueda?`No hay resultados para "<strong>${busqueda}</strong>".`:"Todavía no hay entradas en esta categoría.";
-    grid.innerHTML=`<div class="empty-state"><div class="empty-ico">📖</div><p>${msg}</p></div>`;
-    return;
-  }
-
-  const cardHtml=lista.map(l=>{
-    const titulo=l.tipo!=="reflexion"?l.tituloRef:l.tituloRef;
-    const fuente=l.tipo!=="reflexion"?l.libro:l.libro;
-    const tags=(l.tags||[]).map(t=>`<span class="tag" onclick="event.stopPropagation();abrirTagPage('${t.replace(/'/g,"\\'")}'">${t}</span>`).join("");
-    const badge1=l.finalidad?`<span class="finalidad-badge ${FC[l.finalidad]||""}">${l.finalidad}</span>`:`<span class="tipo-badge">${tipoLabel(l.tipo)}</span>`;
-    const meta=[l.categoria,l.dificultad].filter(Boolean).join(" · ");
-    return`<article class="card" onclick="abrirLeer('${l.id}')">
-  <div class="card-header">
-    <span class="card-type">${tipoLabel(l.tipo)}</span>
-    <div class="card-badges">${badge1}${l.tipo==="libro"?`<span class="badge ${badgeClass(l.estado)}">${badgeLabel(l.estado)}</span>`:""}</div>
-  </div>
-  <div class="card-body">
-    <p class="card-autor">${l.autor||"—"}</p>
-    <h3 class="card-titulo">${l.tipo!=="reflexion"?l.libro:l.tituloRef}</h3>
-    <p class="card-libro">${l.tipo!=="reflexion"?l.tituloRef:l.libro}</p>
-    ${meta?`<p class="card-meta">${meta}</p>`:""}
-    <div class="card-tags">${tags}</div>
-    <p class="card-extracto">${l.reflexion}</p>
-  </div>
-  <div class="card-bar"><div class="card-bar-fill" style="width:${l.progreso||0}%"></div></div>
-  <div class="card-footer">
-    <span class="card-fecha">${fmtFechaUI(l.fecha)}</span>
-    <span class="card-arrow">→</span>
-  </div>
-</article>`;
-  }).join("");
-
-  const lecturaHtml=lecturaCards.length?`
-  <div class="lectura-sep"><div class="sep-line"></div><span class="sep-text">Lista de lectura</span><div class="sep-line"></div></div>
-  ${lecturaCards.map(l=>{
-    const isPend=l.estado==="pendiente";
-    return`<article class="card ${isPend?"card-pendiente":"card-proximo"}" onclick="abrirLeer('${l.id}')">
-  <div class="card-header">
-    <span class="card-type">${tipoLabel(l.tipo)}</span>
-    <span class="badge ${badgeClass(l.estado)}">${badgeLabel(l.estado)}</span>
-  </div>
-  <div class="card-body">
-    <p class="card-autor">${l.autor||"—"}</p>
-    <h3 class="card-titulo">${l.libro}</h3>
-    <p class="card-libro proximo-hint">${isPend?"En lista de lectura":"Próximo en la lista"}</p>
-  </div>
-  <div class="card-footer"><span class="card-fecha">${l.orden?`#${l.orden} en lista`:""}</span><span class="card-arrow">→</span></div>
-</article>`;
-  }).join("")}`:"";
-
-  grid.innerHTML=cardHtml+lecturaHtml;
-}
-
-/* ── FILTROS SECUNDARIOS ── */
-function setFiltroSec(campo,valor){
-  if(campo==="finalidad")filtroFinalidad=valor;
-  if(campo==="categoria")filtroCategoria=valor;
-  if(campo==="estadolib")filtroEstadoLib=valor;
-  if(campo==="dificultad")filtroDificultad=valor;
-  const hay=filtroFinalidad||filtroCategoria||filtroEstadoLib||filtroDificultad;
-  const btnL=$("btn-limpiar-sec");if(btnL)btnL.style.display=hay?"":"none";
-  const btnF=$("btn-filtrar");if(btnF)btnF.classList.toggle("activo",!!hay||$("filtros-secundarios").classList.contains("open"));
-  renderCards();
-}
-
-function limpiarFiltrosSec(){
-  filtroFinalidad=filtroCategoria=filtroEstadoLib=filtroDificultad="";
-  ["filtro-finalidad","filtro-categoria","filtro-estadolib","filtro-dificultad"].forEach(id=>{const s=$(id);if(s){s.value="";s.classList.remove("activo");}});
-  const btnL=$("btn-limpiar-sec");if(btnL)btnL.style.display="none";
-  const btnF=$("btn-filtrar");if(btnF)btnF.classList.toggle("activo",$("filtros-secundarios").classList.contains("open"));
-  renderCards();
-}
-
-function toggleFiltrosSecPanel(){
-  const panel=$("filtros-secundarios"),btn=$("btn-filtrar");
-  const open=panel.classList.toggle("open");
-  const hay=filtroFinalidad||filtroCategoria||filtroEstadoLib||filtroDificultad;
-  btn.textContent=open?"Filtrar ▲":"Filtrar ▼";
-  btn.classList.toggle("activo",open||!!hay);
-}
-
-function toggleLectura(){mostrarLectura=!mostrarLectura;renderCards();}
-
-/* ── MODAL DETALLE ── */
-function abrirDetalle(id){
-  const l=libros.find(x=>x.id==id);
-  if(!l)return;
-  const TC={libro:"var(--accent)",reflexion:"#7B9E87",articulo:"#7a80a0",privado:"#9b7fa6"};
-  $("detail-bar").style.background=TC[l.tipo]||"var(--accent)";
-  $("d-autor").textContent=l.autor||"";
-  const bdg=$("d-badge");if(l.tipo==="libro"){bdg.textContent=badgeLabel(l.estado);bdg.className=`badge ${badgeClass(l.estado)}`;bdg.style.display="";}else bdg.style.display="none";
-  $("d-titulo").textContent=l.tituloRef||l.libro||"";
-  $("d-libro-autor").textContent=l.tipo!=="reflexion"?l.libro:"";
-  $("d-tags").innerHTML=(l.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("");
-
-  const rlbl={libro:"Sobre el libro",reflexion:"Sobre la reflexión",articulo:"Teoría",privado:"Nota privada"};
-  $("d-resumen-label").textContent=rlbl[l.tipo]||"Resumen";
-  $("d-reflexion").innerHTML=txP(l.reflexion);
-
-  const fart=$("d-fecha-articulo");
-  if(l.tipo==="articulo"){fart.textContent=fmtFechaUI(l.fecha);fart.style.display="";}
-  else fart.style.display="none";
-
-  const citaW=$("d-cita-wrap");
-  if(l.cita){$("d-cita").textContent=l.cita;citaW.style.display="";}
-  else citaW.style.display="none";
-
-  const misRefBtn=$("tab-btn-mis-ref");
-  if(l.tension){$("d-mis-reflexiones").innerHTML=txP(l.tension);misRefBtn.style.display="";}
-  else{$("d-mis-reflexiones").innerHTML="";misRefBtn.style.display="none";}
-
-  const vidaBtn=$("tab-btn-vida");
-  if(l.vida){$("d-vida").innerHTML=txP(l.vida);vidaBtn.style.display="";}
-  else{$("d-vida").innerHTML="";vidaBtn.style.display="none";}
-
-  $("tab-btn-ficha").style.display=l.tipo==="libro"?"":"none";
-
-  const notasBtn=$("tab-btn-notas");
-  if(isAdmin){
-    notasBtn.style.display="";
-    $("d-notas").textContent=l.notas||"Sin notas privadas.";
-  } else {
-    notasBtn.style.display="none";
-  }
-
-  const hasOther=!!l.tension||!!l.vida||l.tipo==="libro"||(isAdmin&&!!l.notas);
-  $("detail-tabs-bar").style.display=hasOther?"":"none";
-
-  $("d-ficha-grid").innerHTML=`
-    <div class="ficha-item"><p class="ficha-k">Tipo</p><p class="ficha-v">${tipoLabel(l.tipo)}</p></div>
-    <div class="ficha-item"><p class="ficha-k">${l.tipo==="libro"?"Libro":"Fuente"}</p><p class="ficha-v">${l.libro||"—"}</p></div>
-    <div class="ficha-item"><p class="ficha-k">Autor</p><p class="ficha-v">${l.autor||"—"}</p></div>
-    <div class="ficha-item"><p class="ficha-k">Fecha</p><p class="ficha-v">${fmtFechaUI(l.fecha)||"—"}</p></div>
-    <div class="ficha-item"><p class="ficha-k">Estado</p><p class="ficha-v">${badgeLabel(l.estado)}</p></div>
-    <div class="ficha-item"><p class="ficha-k">Progreso</p><p class="ficha-v">${l.progreso||0}%</p><div class="ficha-bar"><div class="ficha-bar-f" style="width:${l.progreso||0}%"></div></div></div>
-    <div class="ficha-item"><p class="ficha-k">Dificultad</p><p class="ficha-v">${l.dificultad||"—"}</p></div>
-    <div class="ficha-item"><p class="ficha-k">Puntuación</p><p class="ficha-v">${l.puntuacion?l.puntuacion+" / 10":"—"}</p>${l.puntuacion?`<div class="ficha-rating">${Array.from({length:10},(_,i)=>`<span class="r-dot${i<l.puntuacion?" on":""}"></span>`).join("")}</div>`:""}</div>
-    ${l.finalidad?`<div class="ficha-item"><p class="ficha-k">Finalidad</p><p class="ficha-v">${l.finalidad}</p></div>`:""}
-    ${l.categoria?`<div class="ficha-item"><p class="ficha-k">Categoría</p><p class="ficha-v">${l.categoria}</p></div>`:""}
-    ${l.orden?`<div class="ficha-item"><p class="ficha-k">Orden lectura</p><p class="ficha-v">#${l.orden}</p></div>`:""}
-  `;
-
-  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("activo"));
-  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("activo"));
-  document.querySelectorAll(".tab-btn")[0].classList.add("activo");
-  $("tab-resumen").classList.add("activo");
-
-  if(isAdmin){
-    $("btn-editar-detail").onclick=()=>{cerrarModal("detail-overlay");abrirFormModal(id);};
-    $("btn-eliminar-detail").onclick=()=>eliminarLibro(id);
-  }
-
-  abrirModal("detail-overlay");
-}
-
-function cambiarTab(btn,panelId){
-  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("activo"));
-  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("activo"));
-  btn.classList.add("activo");
-  $(panelId).classList.add("activo");
-}
-
-/* ── CRUD ── */
-function eliminarLibro(id){
-  if(!confirm("¿Eliminar esta entrada?"))return;
-  db.ref("libros/"+id).remove();
-  cerrarModal("detail-overlay");
-  mostrarToast("Entrada eliminada.");
-}
-
-function abrirFormModal(editId){
-  actualizarAutocomplete();
-  limpiarForm();
-  wizSetStep(0);
-  const draft=(!editId)&&loadDraft();
-  $("draft-banner").style.display=draft?"":"none";
-  if(editId){
-    const l=libros.find(x=>x.id==editId);
-    if(!l)return;
-    editandoId=editId;
-    $("form-title-text").textContent="Editar entrada";
-    $("f-tipo").value       =l.tipo||"libro";
-    $("f-libro").value      =l.libro||"";
-    $("f-autor").value      =l.autor||"";
-    $("f-fecha").value      =l.fecha||"";
-    $("f-paginas-total").value=l.paginasTotal||"";
-    $("f-pagina-actual").value=l.paginaActual!=null?l.paginaActual:"";
-    $("f-progreso").value   =l.progreso!=null?l.progreso:50;
-    $("progreso-val").textContent=(l.progreso!=null?l.progreso:50)+"%";
-    calcProgress();
-    $("f-estado").value     =l.estado||"leyendo";
-    $("f-tags").value       =(l.tags||[]).join(", ");
-    $("f-titulo-reflexion").value=l.tituloRef||"";
-    $("f-reflexion").value  =l.reflexion||"";
-    $("f-cita").value       =l.cita||"";
-    $("f-vida").value       =l.vida||"";
-    $("f-tension").value    =l.tension||"";
-    $("f-dificultad").value =l.dificultad||"Accesible";
-    $("f-puntuacion").value =l.puntuacion||"";
-    $("f-finalidad").value  =l.finalidad||"";
-    $("f-categoria").value  =l.categoria||"";
-    $("f-orden").value      =l.orden||"";
-    $("f-notas").value      =l.notas||"";
-  } else {
-    editandoId=null;
-    $("form-title-text").textContent="Nueva entrada";
-    $("f-fecha").value=new Date().toISOString().split("T")[0];
-  }
-  abrirModal("form-overlay");
-}
-
-function limpiarForm(){
-  $("libro-form").reset();
-  $("progreso-val").textContent="50%";
-  $("f-notas").value="";
-  $("f-paginas-total").value="";
-  $("f-pagina-actual").value="";
-  calcProgress();
-}
-
-function guardarLibro(e){
-  e.preventDefault();
-  const tagsRaw=$("f-tags").value.trim();
-  const puntRaw=$("f-puntuacion").value.trim();
-  const pagTotal=parseInt($("f-paginas-total").value)||null;
-  const pagActual=$("f-pagina-actual").value!==""?parseInt($("f-pagina-actual").value):null;
-  const progresoCalc=pagTotal?Math.min(100,Math.round((pagActual||0)/pagTotal*100)):parseInt($("f-progreso").value);
-  const datos={
-    tipo:      $("f-tipo").value,
-    libro:     $("f-libro").value.trim(),
-    autor:     $("f-autor").value.trim(),
-    fecha:     $("f-fecha").value,
-    estado:    $("f-estado").value,
-    progreso:  progresoCalc,
-    paginasTotal: pagTotal,
-    paginaActual: pagActual,
-    tags:      tagsRaw?tagsRaw.split(",").map(t=>t.trim()).filter(Boolean):[],
-    tituloRef: $("f-titulo-reflexion").value.trim(),
-    reflexion: $("f-reflexion").value.trim(),
-    cita:      $("f-cita").value.trim(),
-    vida:      $("f-vida").value.trim(),
-    tension:   $("f-tension").value.trim(),
-    dificultad:$("f-dificultad").value,
-    puntuacion:puntRaw?Math.min(10,Math.max(1,parseInt(puntRaw))):null,
-    finalidad: $("f-finalidad").value,
-    categoria: $("f-categoria").value,
-    orden:     $("f-orden").value?parseInt($("f-orden").value):null,
-    notas:     $("f-notas").value.trim()
-  };
-
-  let ok=true;
-  if(!datos.libro&&datos.tipo!=="reflexion"){$("f-libro").classList.add("error");ok=false;}
-  if(!datos.tituloRef){$("f-titulo-reflexion").classList.add("error");ok=false;}
-  if(!datos.reflexion){$("f-reflexion").classList.add("error");ok=false;}
-  if(!ok)return;
-
-  if(editandoId!==null){
-    const idx=libros.findIndex(x=>x.id==editandoId);
-    if(idx!==-1){libros[idx]={...libros[idx],...datos};mostrarToast("Entrada actualizada.");}
-  } else {
-    libros.push({id:libros.reduce((m,l)=>Math.max(m,+l.id||0),0)+1,...datos});
-    mostrarToast("Entrada guardada.");
-  }
-  clearDraft();
-  guardarEnStorage();
-  cerrarModal("form-overlay");
-  renderFiltros();renderCards();actualizarStats();actualizarAutocomplete();
-}
-
-/* ── AUTH ── */
-function setAdminMode(on){
-  isAdmin=on;
-  document.body.classList.toggle("admin",on);
-  $("lock-icon").textContent=on?"🔓":"🔒";
-  renderFiltros();renderCards();
-}
-firebase.auth().onAuthStateChanged(user=>{setAdminMode(!!user);if(user)sincronizarDatos();});
-
-function abrirLoginModal(){
-  if(isAdmin){$("login-section").style.display="none";$("logout-section").style.display="";}
-  else{$("login-section").style.display="";$("logout-section").style.display="none";$("login-user").value="";$("login-pwd").value="";$("login-error").classList.remove("visible");}
-  abrirModal("login-overlay");
-}
-
-function handleLogin(){
-  const email=$("login-user").value.trim(),pwd=$("login-pwd").value;
-  firebase.auth().signInWithEmailAndPassword(email,pwd)
-    .then(()=>{cerrarModal("login-overlay");mostrarToast("Modo edición activado.");})
-    .catch(()=>$("login-error").classList.add("visible"));
-}
-
-function handleLogout(){firebase.auth().signOut().then(()=>{cerrarModal("login-overlay");mostrarToast("Sesión cerrada.");});}
-
-/* ── TOAST ── */
-let toastTimer;
-function mostrarToast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),3000);}
-
-/* ── MODALES ── */
-let _sy=0;
-function abrirModal(id){const o=$(id);o.classList.add("open");const m=o.querySelector(".modal");if(m)m.scrollTop=0;_sy=window.scrollY;document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=`-${_sy}px`;document.body.style.width="100%";}
-function cerrarModal(id){$(id).classList.remove("open");document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";window.scrollTo(0,_sy);}
-function overlayClick(e,id){if(e.target.id===id)cerrarModal(id);}
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){["form-overlay","detail-overlay","login-overlay","tarea-form-overlay"].forEach(id=>{if($(id)&&$(id).classList.contains("open"))cerrarModal(id);});if($("leer-panel").classList.contains("open"))cerrarLeer();}});
-
-/* ── MODO OSCURO ── */
-function toggleDarkMode(){const d=document.documentElement.classList.toggle("dark");$("dark-icon").textContent=d?"☀":"🌙";localStorage.setItem("ensu-dark",d?"1":"0");}
-function initDarkMode(){if(localStorage.getItem("ensu-dark")==="1"){document.documentElement.classList.add("dark");$("dark-icon").textContent="☀";}}
-
-/* ── NAV SCROLL ── */
-window.addEventListener("scroll",()=>{const nav=$("main-nav");if(window.scrollY>20)nav.classList.add("scrolled");else nav.classList.remove("scrolled");},{passive:true});
-
-/* ── BOTTOM NAV ACTIVO ── */
-function updateBNav(page){document.querySelectorAll(".bnav-btn").forEach(b=>b.classList.toggle("activo",b.dataset.page===page));}
-
-/* ── TAREAS ── */
-let tareas=[],editandoTareaId=null,paginaActiva="home",filtroTareas="todas",sortTareas="fecha-asc";
-
-function cargarTareas(){
-  db.ref("tareas").once("value").then(snapshot=>{
-    if(!snapshot.val()){try{const local=JSON.parse(localStorage.getItem("ensu-tareas")||"[]");if(local.length>0){const obj={};local.forEach(t=>{obj[t.id]=t;});db.ref("tareas").set(obj);}}catch{}}
-    db.ref("tareas").on("value",snap=>{const data=snap.val();tareas=data?Object.values(data):[];if(paginaActiva==="tareas")renderTareas();});
-  });
-}
-
-function irATareas(){
-  if(!isAdmin)return;
-  paginaActiva="tareas";
-  $("home-hero").style.display="none";
-  $("search-section").style.display="none";
-  $("quote-section").style.display="none";
-  $("home-filtros").style.display="none";
-  $("toggle-lectura-row").style.display="none";
-  $("home-grid").style.display="none";
-  $("timeline-page").style.display="none";
-  $("tag-page").style.display="none";
-  $("stats-page").style.display="none";
-  $("tareas-page").style.display="block";
-  $("btn-tareas-nav").classList.add("activa");
-  filtroTareas="todas";sortTareas="fecha-asc";
-  if($("tareas-sort"))$("tareas-sort").value="fecha-asc";
-  setFiltroT("todas");renderTareas();
-  updateBNav("tareas");
-}
-
-function irAHome(){
-  paginaActiva="home";
-  $("tareas-page").style.display="none";
-  $("timeline-page").style.display="none";
-  $("tag-page").style.display="none";
-  $("stats-page").style.display="none";
-  $("home-hero").style.display="";
-  $("search-section").style.display="";
-  $("home-filtros").style.display="";
-  $("toggle-lectura-row").style.display="";
-  $("home-grid").style.display="";
-  mostrarCitaAleatoria();
-  $("btn-tareas-nav").classList.remove("activa");
-  $("btn-timeline-nav").classList.remove("activa");
-  $("btn-stats-nav").classList.remove("activa");
-  updateBNav("home");
-}
-
-function sortLista(lista){
-  return lista.slice().sort((a,b)=>{
-    if(sortTareas==="fecha-asc")return(a.fecha||"")<(b.fecha||"")?-1:1;
-    if(sortTareas==="fecha-desc")return(a.fecha||"")>(b.fecha||"")?-1:1;
-    if(sortTareas==="titulo-az")return a.titulo.localeCompare(b.titulo,"es");
-    if(sortTareas==="titulo-za")return b.titulo.localeCompare(a.titulo,"es");
-    return 0;
-  });
-}
-
-function setFiltroT(f){
-  filtroTareas=f;
-  document.querySelectorAll(".pill-t").forEach(b=>b.classList.toggle("activa",b.dataset.f===f));
-  document.querySelectorAll(".tstat-card").forEach(c=>c.classList.toggle("activa",c.dataset.estado===f));
-  const board=document.querySelector(".kanban-board");
-  if(board)board.classList.toggle("filtrado",f!=="todas");
-  document.querySelectorAll(".kanban-col").forEach(col=>{col.style.display=(f==="todas"||col.dataset.estado===f)?"":"none";});
-}
-
-function setSortT(val){sortTareas=val;renderTareas();}
-
-function renderTareas(){
-  const total=tareas.length,cPend=tareas.filter(t=>t.estado==="pendiente").length,cProg=tareas.filter(t=>t.estado==="en-progreso").length,cDone=tareas.filter(t=>t.estado==="completado").length;
-  if($("stat-total"))$("stat-total").textContent=total;
-  if($("stat-pendiente"))$("stat-pendiente").textContent=cPend;
-  if($("stat-en-progreso"))$("stat-en-progreso").textContent=cProg;
-  if($("stat-completado"))$("stat-completado").textContent=cDone;
-  const ESTADOS=["pendiente","en-progreso","completado"];
-  const PREV={"en-progreso":"pendiente","completado":"en-progreso"};
-  const NEXT={"pendiente":"en-progreso","en-progreso":"completado"};
-  ESTADOS.forEach(estado=>{
-    const col=$("col-"+estado),count=$("count-"+estado);
-    const lista=sortLista(tareas.filter(t=>t.estado===estado));
-    count.textContent=lista.length;
-    if(!lista.length){col.innerHTML=`<p class="kanban-empty">Sin tareas</p>`;return;}
-    col.innerHTML=lista.map(t=>`
-      <div class="tarea-card${estado==="completado"?" tarea-estado-done":""}">
-        <div class="tarea-titulo">${t.titulo}</div>
-        ${t.detalles?`<div class="tarea-detalles">${t.detalles.replace(/</g,"&lt;")}</div>`:""}
-        <div class="tarea-footer">
-          <span class="tarea-fecha">${t.fecha?formatFechaCorta(t.fecha):""}</span>
-          <div class="tarea-actions">
-            ${PREV[estado]?`<button class="tarea-btn move" onclick="moverTarea(${t.id},'${PREV[estado]}')" title="Retroceder">←</button>`:""}
-            ${NEXT[estado]?`<button class="tarea-btn move" onclick="moverTarea(${t.id},'${NEXT[estado]}')" title="Avanzar">→</button>`:""}
-            <button class="tarea-btn" onclick="abrirFormTarea(${t.id})" title="Editar">✏</button>
-            <button class="tarea-btn" onclick="eliminarTarea(${t.id})" title="Eliminar">🗑</button>
-          </div>
-        </div>
-      </div>`).join("");
-  });
-  setFiltroT(filtroTareas);
-}
-
-function formatFechaCorta(iso){if(!iso)return"";const[y,m,d]=iso.split("-");return`${d}/${m}/${y}`;}
-
-function abrirFormTarea(id){
-  editandoTareaId=id||null;
-  const t=id?tareas.find(x=>x.id===id):null;
-  $("tarea-form-title-text").textContent=t?"Editar tarea":"Nueva tarea";
-  $("t-titulo").value=t?t.titulo:"";
-  $("t-detalles").value=t?t.detalles:"";
-  $("t-estado").value=t?t.estado:"pendiente";
-  $("t-fecha").value=t?t.fecha:"";
-  abrirModal("tarea-form-overlay");
-}
-
-function guardarTarea(){
-  const titulo=$("t-titulo").value.trim();
-  if(!titulo){alert("El título es obligatorio.");$("t-titulo").focus();return;}
-  const datos={titulo,detalles:$("t-detalles").value.trim(),estado:$("t-estado").value,fecha:$("t-fecha").value};
-  if(editandoTareaId){db.ref("tareas/"+editandoTareaId).update(datos);}
-  else{const maxId=tareas.reduce((m,t)=>Math.max(m,t.id),0)+1;db.ref("tareas/"+maxId).set({id:maxId,...datos});}
-  cerrarModal("tarea-form-overlay");
-}
-
-function eliminarTarea(id){if(!confirm("¿Eliminar esta tarea?"))return;db.ref("tareas/"+id).remove();}
-function moverTarea(id,nuevoEstado){db.ref("tareas/"+id+"/estado").set(nuevoEstado);}
-
-/* ══ PANEL LECTURA ══ */
-let leerActualId=null;
-function abrirLeer(id){
-  document.body.style.opacity="";
-  const l=libros.find(x=>x.id==id);if(!l)return;
-  leerActualId=id;
-  const FC={"Formación":"formacion","Autoconocimiento":"autoconocimiento","Ocio":"ocio"};
-  const TC={libro:"var(--accent)",reflexion:"#7B9E87",articulo:"#7a80a0",privado:"#9b7fa6"};
-  const tags=(l.tags||[]).map(t=>`<span class="leer-tag" onclick="cerrarLeer();setTimeout(()=>abrirTagPage('${t.replace(/'/g,"\\'")}'),200)">${t}</span>`).join("");
-  const badge1=l.finalidad?`<span class="badge ${l.finalidad==='Formación'?'badge-proximo':l.finalidad==='Autoconocimiento'?'badge-leyendo':'badge-terminado'}">${l.finalidad}</span>`:"";
-  let html=`
-    <div class="leer-eyebrow">
-      <span class="leer-tipo">${tipoLabel(l.tipo)}</span>
-      ${badge1}
-      ${l.tipo==="libro"?`<span class="badge ${badgeClass(l.estado)}">${badgeLabel(l.estado)}</span>`:""}
-    </div>
-    <h1 class="leer-titulo">${l.tituloRef||l.libro}</h1>
-    ${l.autor?`<p class="leer-autor">${l.autor}</p>`:""}
-    ${l.libro&&l.tipo!=="reflexion"?`<p class="leer-libro">📖 ${l.libro}</p>`:""}
-    <div class="leer-tags">${tags}</div>`;
-  if(l.reflexion){html+=`<div class="leer-seccion"><p class="leer-sec-lbl">Resumen</p><div class="leer-rich">${txP(l.reflexion)}</div></div>`;}
-  if(l.cita){html+=`<div class="leer-cita"><span class="leer-cita-deco">"</span><p class="leer-cita-txt">${l.cita}</p></div>`;}
-  if(l.tension){html+=`<div class="leer-sep"><div class="leer-sep-line"></div><span class="leer-sep-ico">✦</span><div class="leer-sep-line"></div></div><div class="leer-seccion"><p class="leer-sec-lbl">Mi análisis</p><div class="leer-rich">${txP(l.tension)}</div></div>`;}
-  if(l.vida){html+=`<div class="leer-sep"><div class="leer-sep-line"></div><span class="leer-sep-ico">✦</span><div class="leer-sep-line"></div></div><div class="leer-seccion"><p class="leer-sec-lbl">Cómo lo aplico</p><div class="leer-rich">${txP(l.vida)}</div></div>`;}
-  if(isAdmin&&l.notas){html+=`<div class="leer-sep"><div class="leer-sep-line"></div><span class="leer-sep-ico">🔒</span><div class="leer-sep-line"></div></div><div class="leer-seccion"><p class="leer-sec-lbl">Notas privadas</p><div class="leer-notas">${l.notas}</div></div>`;}
-  const fichaItems=[
-    l.fecha?{k:"Fecha",v:fmtFechaUI(l.fecha)}:null,
-    l.tipo==="libro"?{k:"Estado",v:badgeLabel(l.estado)}:null,
-    l.paginasTotal?{k:"Páginas",v:`${l.paginaActual!=null?l.paginaActual:"—"} / ${l.paginasTotal}`}:null,
-    l.progreso!=null?{k:"Progreso",v:l.progreso+"%"}:null,
-    l.dificultad?{k:"Dificultad",v:l.dificultad}:null,
-    l.puntuacion?{k:"Puntuación",v:l.puntuacion+"/10"}:null,
-    l.categoria?{k:"Categoría",v:l.categoria}:null,
-  ].filter(Boolean);
-  if(fichaItems.length){html+=`<div class="leer-sep"><div class="leer-sep-line"></div><span class="leer-sep-ico">📋</span><div class="leer-sep-line"></div></div><div class="leer-seccion"><p class="leer-sec-lbl">Ficha</p><div class="leer-ficha">${fichaItems.map(f=>`<div class="leer-ficha-item"><p class="leer-ficha-k">${f.k}</p><p class="leer-ficha-v">${f.v}</p></div>`).join("")}</div></div>`;}
-  $("leer-content").innerHTML=html;
-  const rel=getRelacionadas(l);
-  if(rel.length){$("leer-relacionadas").innerHTML=`<p class="rel-title">También relacionado</p><div class="rel-grid">${rel.map(r=>`<div class="rel-card" onclick="abrirLeer('${r.id}')"><p class="rel-tipo">${tipoLabel(r.tipo)}</p><p class="rel-titulo">${r.tituloRef||r.libro}</p><p class="rel-tags">${(r.tags||[]).slice(0,3).join(", ")}</p></div>`).join("")}</div>`;}
-  else $("leer-relacionadas").innerHTML="";
-  const panel=$("leer-panel");panel.style.display="block";requestAnimationFrame(()=>{panel.classList.add("open");});panel.scrollTop=0;
-  document.body.style.overflow="hidden";
-}
-function cerrarLeer(){const panel=$("leer-panel");panel.classList.remove("open");setTimeout(()=>{if(!panel.classList.contains("open"))panel.style.display="none";},260);document.body.style.overflow="";}
-function leerEditar(){if(leerActualId){cerrarLeer();setTimeout(()=>abrirFormModal(leerActualId),300);}}
-function leerEliminar(){if(leerActualId&&confirm("¿Eliminar esta entrada?")){db.ref("libros/"+leerActualId).remove();cerrarLeer();mostrarToast("Entrada eliminada.");}}
-
-function getRelacionadas(entry){
-  const tags=new Set(entry.tags||[]);
-  return libros
-    .filter(l=>l.id!=entry.id&&(isAdmin||l.tipo!=="privado")&&l.estado!=="proximo"&&l.estado!=="pendiente")
-    .map(l=>({l,shared:(l.tags||[]).filter(t=>tags.has(t)).length}))
-    .filter(x=>x.shared>=1)
-    .sort((a,b)=>b.shared-a.shared)
-    .slice(0,4).map(x=>x.l);
-}
-
-/* ══ WIZARD ══ */
-let wizStep=0;
-function wizSetStep(n){
-  wizStep=n;
-  [0,1,2].forEach(i=>{
-    $("wiz-"+i).classList.toggle("activo",i===n);
-    $("wdot-"+i).classList.toggle("done",i<=n);
-    $("wlbl-"+i).classList.toggle("activo",i===n);
-  });
-  $("wiz-hint").textContent=`Paso ${n+1} de 3`;
-  $("wiz-prev").style.display=n>0?"":"none";
-  $("wiz-next").style.display=n<2?"":"none";
-  $("wiz-submit").style.display=n===2?"":"none";
-  const body=$("libro-form").querySelector(".form-body");if(body)body.scrollTop=0;
-}
-function wizNext(){wizSetStep(Math.min(2,wizStep+1));}
-function wizPrev(){wizSetStep(Math.max(0,wizStep-1));}
-
-/* ══ PÁGINAS / PROGRESO ══ */
-function calcProgress(){
-  const elTotal=$("f-paginas-total"),elActual=$("f-pagina-actual"),elRange=$("f-progreso"),elVal=$("progreso-val"),elBadge=$("progreso-auto-badge");
-  if(!elTotal||!elRange)return;
-  const total=parseInt(elTotal.value)||0;
-  const actual=parseInt(elActual?elActual.value:0)||0;
-  const auto=total>0&&elTotal.value!=="";
-  if(auto){
-    const pct=Math.min(100,Math.round(actual/total*100));
-    elRange.value=pct;
-    if(elVal)elVal.textContent=pct+"%";
-    if(elBadge)elBadge.style.display="";
-    elRange.disabled=true;
-  } else {
-    if(elBadge)elBadge.style.display="none";
-    elRange.disabled=false;
-  }
-}
-
-/* ══ BORRADOR ══ */
-function saveDraft(){
-  if(editandoId!==null)return;
-  const campos=["f-tipo","f-estado","f-libro","f-autor","f-fecha","f-paginas-total","f-pagina-actual","f-progreso","f-finalidad","f-categoria","f-orden","f-dificultad","f-puntuacion","f-tags","f-titulo-reflexion","f-reflexion","f-cita","f-vida","f-tension","f-notas"];
-  const data={};campos.forEach(id=>{const el=$(id);if(el)data[id]=el.value;});
-  localStorage.setItem("ensu-draft",JSON.stringify(data));
-}
-function loadDraft(){
-  try{const raw=localStorage.getItem("ensu-draft");return raw?JSON.parse(raw):null;}catch{return null;}
-}
-function clearDraft(){localStorage.removeItem("ensu-draft");}
-function restaurarBorrador(){
-  const d=loadDraft();if(!d)return;
-  const campos=["f-tipo","f-estado","f-libro","f-autor","f-fecha","f-paginas-total","f-pagina-actual","f-finalidad","f-categoria","f-orden","f-dificultad","f-puntuacion","f-tags","f-titulo-reflexion","f-reflexion","f-cita","f-vida","f-tension","f-notas"];
-  campos.forEach(id=>{const el=$(id);if(el&&d[id]!==undefined)el.value=d[id];});
-  if(d["f-progreso"]&&!d["f-paginas-total"]){$("f-progreso").value=d["f-progreso"];$("progreso-val").textContent=d["f-progreso"]+"%";}
-  calcProgress();
-  $("draft-banner").style.display="none";
-}
-function descartarBorrador(){clearDraft();$("draft-banner").style.display="none";}
-
-/* ══ AUTOCOMPLETE ══ */
-function actualizarAutocomplete(){
-  const librosUni=[...new Set(libros.map(l=>l.libro).filter(Boolean))];
-  const autoresUni=[...new Set(libros.map(l=>l.autor).filter(Boolean))];
-  $("dl-libros").innerHTML=librosUni.map(v=>`<option value="${v.replace(/"/g,'&quot;')}">`).join("");
-  $("dl-autores").innerHTML=autoresUni.map(v=>`<option value="${v.replace(/"/g,'&quot;')}">`).join("");
-}
-
-/* ══ TIMELINE ══ */
-function renderTimeline(){
-  const lista=libros
-    .filter(l=>(isAdmin||l.tipo!=="privado")&&l.estado!=="proximo"&&l.estado!=="pendiente"&&l.fecha)
-    .slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-  if(!lista.length){$("timeline-body").innerHTML=`<div style="text-align:center;padding:48px;color:var(--muted)">Sin entradas con fecha.</div>`;return;}
-  const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-  const grupos={};
-  lista.forEach(l=>{const d=new Date(l.fecha);const key=`${d.getFullYear()}-${d.getMonth()}`;if(!grupos[key])grupos[key]={label:`${meses[d.getMonth()].charAt(0).toUpperCase()+meses[d.getMonth()].slice(1)} ${d.getFullYear()}`,items:[]};grupos[key].items.push(l);});
-  $("timeline-body").innerHTML=Object.values(grupos).map(g=>`
-    <div class="tl-group">
-      <div class="tl-mes">${g.label}</div>
-      <div class="tl-items">
-        ${g.items.map(l=>`<div class="tl-item" onclick="abrirLeer('${l.id}')">
-          <p class="tl-item-tipo">${tipoLabel(l.tipo)} · ${badgeLabel(l.estado)}</p>
-          <p class="tl-item-titulo">${l.tituloRef||l.libro}</p>
-          ${l.reflexion?`<p class="tl-item-extracto">${l.reflexion.split('\n')[0]}</p>`:""}
-          <div class="tl-item-footer"><span class="tl-item-fecha">${fmtFechaUI(l.fecha)}</span><span style="font-size:13px;color:var(--muted)">→</span></div>
-        </div>`).join("")}
-      </div>
-    </div>`).join("");
-}
-
-function irATimeline(){
-  irAHome();
-  $("home-hero").style.display="none";
-  $("search-section").style.display="none";
-  $("quote-section").style.display="none";
-  $("home-filtros").style.display="none";
-  $("toggle-lectura-row").style.display="none";
-  $("home-grid").style.display="none";
-  $("timeline-page").style.display="block";
-  $("tag-page").style.display="none";
-  $("btn-timeline-nav").classList.add("activa");
-  renderTimeline();
-  updateBNav("timeline");
-}
-
-/* ══ TAG PAGE ══ */
-function abrirTagPage(tag){
-  irAHome();
-  $("home-hero").style.display="none";
-  $("search-section").style.display="none";
-  $("quote-section").style.display="none";
-  $("home-filtros").style.display="none";
-  $("toggle-lectura-row").style.display="none";
-  $("home-grid").style.display="none";
-  $("timeline-page").style.display="none";
-  $("tag-page").style.display="block";
-  $("tag-page-title").textContent="#"+tag;
-  const resultados=libros.filter(l=>(isAdmin||l.tipo!=="privado")&&(l.tags||[]).includes(tag)&&l.estado!=="proximo"&&l.estado!=="pendiente");
-  $("tag-page-count").textContent=`${resultados.length} ${resultados.length===1?"entrada":"entradas"}`;
-  const FC={"Formación":"formacion","Autoconocimiento":"autoconocimiento","Ocio":"ocio"};
-  $("tag-page-grid").innerHTML=resultados.length
-    ?resultados.map(l=>{const badge1=l.finalidad?`<span class="finalidad-badge ${FC[l.finalidad]||""}">${l.finalidad}</span>`:`<span class="tipo-badge">${tipoLabel(l.tipo)}</span>`;const t=(l.tags||[]).map(t2=>`<span class="tag" onclick="event.stopPropagation();abrirTagPage('${t2.replace(/'/g,"\\'")}'">${t2}</span>`).join("");return`<article class="card" onclick="abrirLeer('${l.id}')"><div class="card-header"><span class="card-type">${tipoLabel(l.tipo)}</span><div class="card-badges">${badge1}<span class="badge ${badgeClass(l.estado)}">${badgeLabel(l.estado)}</span></div></div><div class="card-body"><p class="card-autor">${l.autor||"—"}</p><h3 class="card-titulo">${l.tipo!=="reflexion"?l.libro:l.tituloRef}</h3><p class="card-libro">${l.tipo!=="reflexion"?l.tituloRef:l.libro}</p><div class="card-tags">${t}</div><p class="card-extracto">${l.reflexion}</p></div><div class="card-bar"><div class="card-bar-fill" style="width:${l.progreso||0}%"></div></div><div class="card-footer"><span class="card-fecha">${fmtFechaUI(l.fecha)}</span><span class="card-arrow">→</span></div></article>`;}).join("")
-    :`<div style="text-align:center;padding:48px;color:var(--muted)">Sin entradas con esta etiqueta.</div>`;
-}
-
-function cerrarTagPage(){
-  paginaActiva="home";
-  $("tag-page").style.display="none";
-  $("home-hero").style.display="";
-  $("home-filtros").style.display="";
-  $("toggle-lectura-row").style.display="";
-  $("home-grid").style.display="";
-  $("search-section").style.display="";
-  mostrarCitaAleatoria();
-  updateBNav("home");
-}
-
-/* ══ CITA ALEATORIA ══ */
-function mostrarCitaAleatoria(){
-  const pool=libros.filter(l=>l.cita&&l.cita.trim()&&(isAdmin||l.tipo!=="privado"));
-  if(!pool.length){$("quote-section").style.display="none";return;}
-  const e=pool[Math.floor(Math.random()*pool.length)];
-  $("quote-text").textContent=e.cita;
-  $("quote-source").textContent=(e.tipo!=="reflexion"?(e.libro||""):(e.tituloRef||""))+(e.autor?" — "+e.autor:"");
-  $("quote-section").style.display="block";
-}
-
-/* ══ STATS ══ */
-function irAStats(){
-  irAHome();
-  ["home-hero","search-section","home-filtros","toggle-lectura-row","home-grid","quote-section"].forEach(id=>{const el=$(id);if(el)el.style.display="none";});
-  $("stats-page").style.display="block";
-  $("btn-stats-nav").classList.add("activa");
-  renderStats();
-  updateBNav("stats");
-}
-
-function renderStats(){
-  const datos=libros.filter(l=>isAdmin||l.tipo!=="privado");
-  const terminados=datos.filter(l=>l.estado==="terminado");
-  const leyendo=datos.filter(l=>l.estado==="leyendo");
-  const proximos=datos.filter(l=>l.estado==="proximo"||l.estado==="pendiente");
-  // Cajas resumen
-  $("stats-boxes").innerHTML=[
-    {n:datos.length,l:"Total"},
-    {n:terminados.length,l:"Terminados"},
-    {n:leyendo.length,l:"Leyendo"},
-    {n:proximos.length,l:"Por leer"},
-    {n:datos.filter(l=>l.tipo==="libro").length,l:"Libros"},
-    {n:datos.filter(l=>l.tipo==="articulo").length,l:"Artículos"},
-  ].map(s=>`<div class="stat-box"><div class="stat-box-num">${s.n}</div><div class="stat-box-lbl">${s.l}</div></div>`).join("");
-  // Por mes (últimos 12)
-  const meses=[];
-  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);meses.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`,label:d.toLocaleDateString("es",{month:"short",year:"2-digit"})});}
-  const cntMes={};terminados.forEach(l=>{if(l.fecha){const k=l.fecha.substring(0,7);cntMes[k]=(cntMes[k]||0)+1;}});
-  const maxMes=Math.max(1,...meses.map(m=>cntMes[m.key]||0));
-  $("stats-por-mes").innerHTML=meses.map(m=>{const n=cntMes[m.key]||0;return`<div class="bar-row"><span class="bar-label">${m.label}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxMes*100)}%"></div></div><span class="bar-count">${n||""}</span></div>`;}).join("");
-  // Por tipo
-  const tipos=[["libro","Libros"],["articulo","Artículos"],["reflexion","Reflexiones"]];
-  const maxTipo=Math.max(1,...tipos.map(([t])=>datos.filter(l=>l.tipo===t).length));
-  $("stats-tipos").innerHTML=tipos.map(([t,lbl])=>{const n=datos.filter(l=>l.tipo===t).length;return`<div class="bar-row"><span class="bar-label">${lbl}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxTipo*100)}%"></div></div><span class="bar-count">${n||""}</span></div>`;}).join("");
-  // Autores
-  const cntAut={};datos.filter(l=>l.autor).forEach(l=>cntAut[l.autor]=(cntAut[l.autor]||0)+1);
-  const topAut=Object.entries(cntAut).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxAut=topAut.length?topAut[0][1]:1;
-  $("stats-autores").innerHTML=topAut.length?topAut.map(([a,n])=>`<div class="bar-row"><span class="bar-label" style="font-size:11px">${a}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxAut*100)}%"></div></div><span class="bar-count">${n}</span></div>`).join(""):`<p style="color:var(--muted);font-size:13px">Sin datos aún</p>`;
-  // Tags
-  const cntTag={};datos.forEach(l=>(l.tags||[]).forEach(t=>cntTag[t]=(cntTag[t]||0)+1));
-  const topTags=Object.entries(cntTag).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  $("stats-tags").innerHTML=topTags.map(([t,n])=>`<div class="tag-pill-stat">${t}<span>${n}</span></div>`).join("");
-}
-
 /* ── DEVTOOLS PREVENTION ── */
 document.addEventListener("contextmenu",e=>e.preventDefault());
 document.addEventListener("keydown",function(e){
@@ -2279,12 +422,6 @@ document.addEventListener("keydown",function(e){
   if(e.ctrlKey&&e.key.toUpperCase()==="U"){e.preventDefault();return false;}
   if(e.metaKey&&e.altKey&&e.key.toUpperCase()==="I"){e.preventDefault();return false;}
 });
-
-/* ── INIT ── */
-initDarkMode();
-cargarDesdeStorage();
-cargarTareas();
-updateBNav("home");
 </script>
 </body>
 </html>
