@@ -4,11 +4,11 @@
    - Portadas: caché primero (no cambian).
    Nunca se cachean notas privadas, tareas ni historial. Al cerrar sesión la web
    borra la caché de datos ("ensu-datos"). */
-const VERSION = "ensu-web-v3";
+const VERSION = "ensu-web-v4";
 const DATOS = "ensu-datos";
 const PORTADAS = "ensu-portadas";
 const SHELL = ["./", "index.html", "css/ensu.css", "js/ensu.js", "manifest.webmanifest",
-  "img/icon.svg", "img/icon-192.png", "img/icon-512.png", "img/favicon-32.png", "img/logo.png"];
+  "img/icon.svg?v=2", "img/icon-192.png", "img/icon-512.png", "img/favicon-32.png", "img/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

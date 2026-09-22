@@ -81,7 +81,7 @@ function errTxt(err){
      tareas          solo autor                                                    */
 const Store=(()=>{
   let sb,admin=false,cargado=false,errorCarga=null;
-  let entradasDb=[],notas={},tareas=[],ajustes={},historial=[];
+  let entradasDb=[],notas={},tareas=[],ajustes={},historial=[],firmaEntradas="";
   const subs=new Set(),authSubs=new Set();
   const emit=()=>subs.forEach(f=>f());
   const numOr=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d;};
@@ -131,7 +131,11 @@ const Store=(()=>{
 
   async function cargarEntradas(){
     try{
-      entradasDb=ok(await sb.from("entradas").select("*").order("id")).map(norm);
+      const filas=ok(await sb.from("entradas").select("*").order("id"));
+      const firma=JSON.stringify(filas);
+      if(firma===firmaEntradas&&cargado&&!errorCarga)return;
+      firmaEntradas=firma;
+      entradasDb=filas.map(norm);
       errorCarga=null;
     }catch(err){errorCarga=err;console.warn("EnSu carga:",err&&err.message);}
     cargado=true;emit();
@@ -251,9 +255,11 @@ const Portadas=(()=>{
     const k2=tit.length>40?.72:tit.length>22?.85:1;
     return`<div class="cover${u?" tiene-img":""}" data-ck="${k}" data-id="${e.id}" style="background:${tono}">${extra}
       <div class="cover-gen" style="--cg-k:${k2}"><div><div class="cg-t">${esc(tit)}</div><div class="cg-rule"></div></div><div class="cg-a">${esc(e.autor||"")}</div></div>
-      ${u?`<img src="${esc(u)}" alt="" loading="lazy" onload="this.classList.add('ok')" onerror="Portadas.fallo(this)">`:""}
+      ${u?`<img src="${esc(u)}" alt=""${cargadas.has(u)?` class="ok"`:` loading="lazy"`} onload="Portadas.ok(this)" onerror="Portadas.fallo(this)">`:""}
     </div>`;
   }
+  const cargadas=new Set();
+  function ok(img){img.classList.add("ok");cargadas.add(img.getAttribute("src"));}
   function fallo(img){const c=img.closest(".cover");if(c)c.classList.remove("tiene-img");img.remove();}
   function pedir(e){
     if(e.tipo!=="libro"||conocida(e)||!e.libro)return;
@@ -266,7 +272,9 @@ const Portadas=(()=>{
       buscar(e).then(id=>{
         cache[clave(e)]=id;guardarCache();
         if(id>0)pintar(clave(e),id);
-        if(Store.isAdmin()&&!e.portadaId&&e.tipo==="libro")Store.actualizarCampos(e.id,{portadaId:id}).catch(()=>{});
+        const actual=Store.isAdmin()&&Store.entradas().find(x=>x.id===e.id);
+        const editando=Form.id===e.id&&$("form-overlay").classList.contains("open");
+        if(actual&&actual.tipo==="libro"&&actual.portadaId===0&&!actual.portada&&!editando)Store.actualizarCampos(e.id,{portadaId:id}).catch(()=>{});
       }).catch(()=>{}).finally(()=>{activas--;enCurso.delete(clave(e));bombear();});
     }
   }
@@ -313,11 +321,11 @@ const Portadas=(()=>{
       if(c.querySelector("img"))return;
       const tam=c.closest(".leer-hero")?"L":"M";
       c.classList.add("tiene-img");
-      c.insertAdjacentHTML("beforeend",`<img src="https://covers.openlibrary.org/b/id/${id}-${tam}.jpg?default=false" alt="" onload="this.classList.add('ok')" onerror="Portadas.fallo(this)">`);
+      c.insertAdjacentHTML("beforeend",`<img src="https://covers.openlibrary.org/b/id/${id}-${tam}.jpg?default=false" alt="" onload="Portadas.ok(this)" onerror="Portadas.fallo(this)">`);
     });
   }
   function reintentar(e){delete cache[clave(e)];guardarCache();}
-  return{html,pedir,fallo,url,reintentar,opciones,clave};
+  return{html,pedir,fallo,ok,url,reintentar,opciones,clave};
 })();
 window.Portadas=Portadas;
 
@@ -1294,7 +1302,7 @@ const ACCIONES={
   "form-del":()=>eliminarEntrada(Form.id),
   "borrador-si":()=>restaurarBorrador(),
   "borrador-no":()=>borrarBorrador(),
-  "portada-buscar":()=>{fEl("portada").value="";fEl("portadaId").value="";$("cover-opciones").hidden=true;const prev=Form.id!=null?visibles().find(x=>x.id===Form.id):null;if(prev){Portadas.reintentar(prev);Store.actualizarCampos(prev.id,{portadaId:0}).catch(()=>{});}actualizarPreviewPortada();toast("Se buscará la portada automáticamente.");},
+  "portada-buscar":()=>{fEl("portada").value="";fEl("portadaId").value="";$("cover-opciones").hidden=true;const prev=Form.id!=null?visibles().find(x=>x.id===Form.id):null;if(prev)Portadas.reintentar(prev);actualizarPreviewPortada();toast("Al guardar se buscará la portada automáticamente.");},
   "reto-editar":()=>abrirReto(),
   "reto-guardar":()=>guardarReto(false),
   "reto-quitar":()=>guardarReto(true),
