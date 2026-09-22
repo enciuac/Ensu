@@ -87,7 +87,9 @@ const Store=(()=>{
   const numOr=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d;};
 
   /* Base de datos (snake_case) → app (camelCase) */
-  function norm(r){
+  function norm(r0){
+    // Saltos de línea de Windows (\r\n) → \n, para que textos pegados se vean y editen igual
+    const r={};for(const k in r0)r[k]=typeof r0[k]==="string"?r0[k].replace(/\r\n?/g,"\n"):r0[k];
     const n={
       id:Number(r.id),tipo:TIPOS[r.tipo]?r.tipo:"libro",estado:ESTADOS[r.estado]?r.estado:"terminado",
       libro:r.libro||"",autor:r.autor||"",fecha:r.fecha||"",tituloRef:r.titulo_ref||"",
