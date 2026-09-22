@@ -593,4 +593,113 @@ html.dark .toast:not(.error){background:var(--accent);color:#1A1714}
   .site-foot{padding-bottom:20px}
 }
 @media(min-width:768px){.lib-r .solo-movil{display:none}}
+
+/* ════════════════════════════════════
+   RETO ANUAL
+════════════════════════════════════ */
+.reto-card{display:flex;align-items:center;gap:22px;background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:20px 24px}
+.reto-anillo{--p:0;width:78px;height:78px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--surface2) 0)}
+.reto-anillo span{width:62px;height:62px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.reto-body{flex:1;min-width:0}
+.reto-num{font-family:var(--serif);font-size:26px;line-height:1.15;margin-top:4px;font-variant-numeric:lining-nums}
+.reto-num b{font-weight:500}
+.reto-estado{font-size:13px;color:var(--text2);margin-top:2px}
+.reto-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.reto-vacio{width:100%;display:flex;align-items:center;gap:14px;text-align:left;background:var(--surface);border:1.5px dashed rgba(196,169,125,.55);border-radius:var(--r);padding:18px 22px;color:var(--accent-dk);transition:all var(--tr)}
+.reto-vacio:hover{background:rgba(196,169,125,.07)}
+.reto-vacio span{flex:1;display:flex;flex-direction:column}
+.reto-vacio b{font-size:15px;color:var(--text)}
+.reto-vacio small{font-size:12.5px;color:var(--muted)}
+html.dark .reto-vacio{color:var(--accent)}
+
+/* Enlace al resumen desde estadísticas */
+.resumen-cta{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,rgba(196,169,125,.18),rgba(196,169,125,.04));border:1px solid rgba(196,169,125,.4);border-radius:var(--r);padding:16px 20px;margin-bottom:14px;color:var(--accent-dk);transition:transform var(--tr)}
+.resumen-cta:hover{transform:translateY(-1px)}
+.resumen-cta span{flex:1;display:flex;flex-direction:column}
+.resumen-cta b{font-family:var(--serif);font-size:21px;font-weight:500;color:var(--text)}
+.resumen-cta small{font-size:12.5px;color:var(--text2)}
+html.dark .resumen-cta{color:var(--accent)}
+
+/* Ritmo de lectura */
+.ritmo-svg{width:100%;height:90px;display:block;background:linear-gradient(180deg,rgba(196,169,125,.08),transparent);border-radius:var(--r-sm)}
+.ritmo-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:12px}
+.ritmo-dato{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r-sm);padding:11px 13px}
+.ritmo-dato b{display:block;font-family:var(--serif);font-size:26px;font-weight:500;line-height:1.1;font-variant-numeric:lining-nums}
+.ritmo-dato span{font-size:11.5px;color:var(--muted)}
+
+/* ════════════════════════════════════
+   CITAS
+════════════════════════════════════ */
+.citas-grid{columns:3 300px;column-gap:16px;padding-bottom:56px}
+.cita-card{break-inside:avoid;margin:0 0 16px;background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:24px 24px 16px;position:relative;transition:box-shadow var(--tr)}
+.cita-card:hover{box-shadow:var(--sh-md)}
+.cita-mark{font-family:var(--serif);font-size:64px;line-height:.5;color:var(--accent);opacity:.55;display:block;height:24px}
+.cita-card blockquote{font-family:var(--serif);font-size:21px;font-style:italic;line-height:1.45}
+.cita-card figcaption{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid var(--borde)}
+.cita-fuente{font-size:12.5px;font-weight:600;color:var(--text);text-align:left}
+.cita-fuente span{font-weight:400;color:var(--muted)}
+.cita-fuente:hover{color:var(--accent-dk)}
+.cita-card .btn-icon{width:32px;height:32px;flex-shrink:0}
+.leer-cita-btn{margin-top:18px}
+.img-estilos{display:flex;gap:8px;margin-bottom:12px}
+.img-estilo{width:44px;height:44px;border-radius:10px;font-family:var(--serif);font-size:30px;line-height:1;border:2px solid var(--borde2)}
+.img-estilo.activo{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.img-preview{width:100%;border-radius:var(--r-sm);box-shadow:var(--sh-md);background:var(--surface2);aspect-ratio:4/5;object-fit:cover}
+
+/* ════════════════════════════════════
+   RESUMEN DEL AÑO
+════════════════════════════════════ */
+.res-hero{text-align:center;padding:56px 0 30px}
+.res-title{font-family:var(--serif);font-size:clamp(40px,7vw,78px);font-weight:300;line-height:1.02;margin:12px 0 30px}
+.res-title em{color:var(--accent-dk);font-style:italic}
+html.dark .res-title em{color:var(--accent)}
+.res-nums{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.res-num{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:16px 22px;min-width:150px}
+.res-num b{display:block;font-family:var(--serif);font-size:46px;font-weight:400;line-height:1;font-variant-numeric:lining-nums}
+.res-num span{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.res-reto{margin-top:18px;font-size:14px;font-weight:600;color:var(--accent-dk)}
+html.dark .res-reto{color:var(--accent)}
+.res-share{margin-top:18px}
+.res-anios{justify-content:center;margin-bottom:34px}
+.res-muro{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:18px}
+.res-libro{cursor:pointer}
+.res-libro .cover{width:100%;transition:transform var(--tr)}
+.res-libro:hover .cover{transform:translateY(-4px) rotate(-1deg)}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:10px}
+.res-card{background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:20px 22px}
+.res-card .eyebrow{margin-bottom:14px}
+.res-fav{cursor:pointer}
+.res-fav-in{display:flex;gap:16px;align-items:center}
+.res-fav-in .cover{width:84px}
+.res-fav-in h3{font-family:var(--serif);font-size:22px;font-weight:500;line-height:1.15}
+.res-fav-in p{font-size:13px;color:var(--muted);margin:2px 0 6px}
+.res-cita{margin-top:24px}
+.res-cita figcaption{font-size:13px;color:var(--muted);margin-top:14px}
+
+/* ════════════════════════════════════
+   PORTADAS EN EL FORMULARIO
+════════════════════════════════════ */
+.cover-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cover-opciones{margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--r-sm)}
+.cover-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:10px;margin-top:8px;max-height:280px;overflow-y:auto}
+.cover-op{aspect-ratio:2/3;border-radius:4px;overflow:hidden;border:2px solid transparent;background:var(--surface3);padding:0}
+.cover-op img{width:100%;height:100%;object-fit:cover}
+.cover-op:hover{border-color:var(--borde2)}
+.cover-op.activo{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+
+@media(max-width:767px){
+  .reto-card{flex-wrap:wrap;gap:14px;padding:16px}
+  .reto-anillo{width:64px;height:64px}
+  .reto-anillo span{width:50px;height:50px;font-size:13px}
+  .reto-num{font-size:22px}
+  .reto-acts{width:100%;justify-content:flex-start}
+  .citas-grid{columns:1}
+  .cita-card blockquote{font-size:20px}
+  .res-hero{padding:34px 0 22px}
+  .res-num{min-width:0;flex:1 1 40%;padding:14px}
+  .res-num b{font-size:36px}
+  .res-muro{grid-template-columns:repeat(3,1fr);gap:12px}
+  .res-grid{grid-template-columns:1fr}
+}
+
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

@@ -1,0 +1,22 @@
+{
+  "name": "EnSu — Biblioteca personal",
+  "short_name": "EnSu",
+  "description": "Lo que leo me forma: reflexiones, citas y cómo cada lectura aterriza en la vida real.",
+  "lang": "es",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F4EF",
+  "theme_color": "#F7F4EF",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Biblioteca", "url": "./#/biblioteca", "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Citas", "url": "./#/citas", "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

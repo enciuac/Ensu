@@ -10,11 +10,16 @@
 <meta property="og:site_name" content="EnSu">
 <meta property="og:title" content="EnSu — Lo que leo me forma">
 <meta property="og:description" content="Una biblioteca personal: reflexiones, citas y cómo cada lectura aterriza en la vida real.">
-<meta property="og:image" content="https://enciuac.github.io/Ensu/img/logo.png">
+<meta property="og:image" content="img/icon-512.png">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="img/logo.png" type="image/png">
-<link rel="apple-touch-icon" href="img/logo.png">
-<link rel="apple-touch-icon" sizes="180x180" href="img/logo.png">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EnSu">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
@@ -54,6 +59,11 @@
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24"><path d="M9.5 7C6.5 7.6 5 9.8 5 13v4h5v-5H7.3c.2-1.8 1-2.8 2.7-3.2zM19.5 7c-3 .6-4.5 2.8-4.5 6v4h5v-5h-2.7c.2-1.8 1-2.8 2.7-3.2z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
 </svg>
 
@@ -67,6 +77,7 @@
     <div class="nav-links">
       <a href="#/" class="nav-link" data-nav="home">Inicio</a>
       <a href="#/biblioteca" class="nav-link" data-nav="biblioteca">Biblioteca</a>
+      <a href="#/citas" class="nav-link" data-nav="citas">Citas</a>
       <a href="#/cronologia" class="nav-link" data-nav="cronologia">Cronología</a>
       <a href="#/estadisticas" class="nav-link" data-nav="estadisticas">Estadísticas</a>
       <a href="#/tareas" class="nav-link admin-only" data-nav="tareas">Tareas</a>
@@ -106,6 +117,8 @@
       </div>
       <div class="hero-stats" id="hero-stats"></div>
     </header>
+
+    <section class="sec" id="sec-reto" hidden></section>
 
     <section class="sec" id="sec-leyendo" hidden>
       <div class="sec-head"><h2 class="sec-title">Leyendo ahora <span class="sec-count" id="leyendo-count"></span></h2></div>
@@ -190,7 +203,9 @@
   <div class="wrap" style="max-width:980px;padding-bottom:56px">
     <header class="page-head"><p class="eyebrow">Métricas</p><h1 class="page-title">Estadísticas</h1></header>
     <div class="stats-boxes" id="stats-boxes"></div>
+    <a class="resumen-cta" id="stats-resumen" href="#/resumen"></a>
     <div class="stats-card"><h3 id="stats-act-title">Actividad</h3><div id="stats-actividad"></div></div>
+    <div class="stats-card admin-only"><h3>Páginas leídas por semana</h3><div id="stats-ritmo"></div></div>
     <div class="stats-2">
       <div class="stats-card"><h3>Categorías</h3><div id="stats-categorias"></div></div>
       <div class="stats-card"><h3>Por tipo</h3><div id="stats-tipos"></div></div>
@@ -218,6 +233,28 @@
     <div class="tareas-stats" id="tareas-stats"></div>
     <div class="kanban" id="kanban"></div>
   </div>
+</section>
+
+<!-- ═══ CITAS ═══ -->
+<section class="view" id="view-citas">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Frases que me acompañan</p>
+      <h1 class="page-title">Citas</h1>
+      <p class="page-sub" id="citas-count"></p>
+    </header>
+    <div class="toolbar">
+      <label class="search"><span class="sr-only">Buscar</span><svg class="i sm"><use href="#i-search"/></svg>
+        <input type="search" id="citas-q" placeholder="Buscar en las citas…" autocomplete="off">
+      </label>
+    </div>
+    <div class="citas-grid" id="citas-grid"></div>
+  </div>
+</section>
+
+<!-- ═══ RESUMEN DEL AÑO ═══ -->
+<section class="view" id="view-resumen">
+  <div class="wrap" id="resumen-body"></div>
 </section>
 
 <!-- ═══ ETIQUETA ═══ -->
@@ -289,6 +326,10 @@
             <div class="form-g"><label for="f-fecha">Fecha <small>(el público solo ve el año)</small></label><input type="date" id="f-fecha"></div>
             <div class="form-g"><label for="f-progreso">Progreso <small id="progreso-auto" hidden>· calculado por páginas</small> — <b id="progreso-val">0%</b></label><input type="range" id="f-progreso" min="0" max="100" value="0" style="margin-top:12px"></div>
           </div>
+          <div class="form-row solo-libro" id="row-terminado">
+            <div class="form-g"><label for="f-terminadoEn">Terminado el <small>(cuenta para el reto del año)</small></label><input type="date" id="f-terminadoEn"></div>
+            <div class="form-g"></div>
+          </div>
           <div class="form-row solo-libro">
             <div class="form-g"><label for="f-paginaActual">Página actual</label><input type="number" id="f-paginaActual" min="0" inputmode="numeric" placeholder="ej. 150"><span class="field-err" id="err-paginaActual"></span></div>
             <div class="form-g"><label for="f-paginasTotal">Páginas totales</label><input type="number" id="f-paginasTotal" min="1" inputmode="numeric" placeholder="ej. 320"><span class="field-err" id="err-paginasTotal"></span></div>
@@ -310,11 +351,18 @@
             <div class="cover-preview">
               <div id="cover-prev"></div>
               <div style="flex:1;display:flex;flex-direction:column;gap:6px">
-                <input type="url" id="f-portada" placeholder="Pega un enlace a una imagen (opcional)">
+                <div class="cover-btns">
+                  <button type="button" class="chip-btn" data-act="portada-elegir"><svg class="i sm"><use href="#i-image"/></svg>Elegir portada</button>
+                  <button type="button" class="chip-btn" data-act="portada-subir"><svg class="i sm"><use href="#i-upload"/></svg>Subir foto</button>
+                  <button type="button" class="btn-link" data-act="portada-buscar">Automática</button>
+                </div>
+                <input type="url" id="f-portada" placeholder="…o pega un enlace a una imagen">
+                <input type="hidden" id="f-portadaId">
+                <input type="file" id="f-portada-file" accept="image/*" hidden>
                 <span class="field-err" id="err-portada"></span>
-                <span class="form-hint">Si lo dejas vacío se busca automáticamente. <button type="button" class="btn-link" data-act="portada-buscar">Volver a buscar</button></span>
               </div>
             </div>
+            <div class="cover-opciones" id="cover-opciones" hidden></div>
           </div>
         </div>
 
@@ -388,6 +436,33 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: RETO ═══ -->
+<div class="modal-overlay" id="reto-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="reto-title">
+    <button class="modal-close" data-act="cerrar" data-v="reto-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-bar"></div>
+    <div class="modal-head"><p class="eyebrow">Reto de lectura</p><h2 class="modal-title" id="reto-title" style="margin-top:6px"></h2></div>
+    <div class="modal-body">
+      <div class="form-g"><label for="reto-n">¿Cuántos libros quieres leer este año?</label><input type="number" id="reto-n" min="1" max="365" inputmode="numeric"></div>
+      <p class="form-hint">Cuentan los libros marcados como terminados con fecha de fin de este año.</p>
+    </div>
+    <div class="modal-foot"><button class="btn-link" data-act="reto-quitar" style="color:var(--danger);margin-right:auto">Quitar reto</button><button class="btn-cancel" data-act="cerrar" data-v="reto-overlay">Cancelar</button><button class="btn-save" id="reto-btn" data-act="reto-guardar"><span class="spin"></span>Guardar</button></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: IMAGEN DE CITA ═══ -->
+<div class="modal-overlay" id="img-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-label="Imagen de la cita">
+    <button class="modal-close" data-act="cerrar" data-v="img-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-head"><h2 class="modal-title">Compartir cita</h2></div>
+    <div class="modal-body">
+      <div class="img-estilos" id="img-estilos"></div>
+      <img id="img-preview" alt="Vista previa de la imagen" class="img-preview">
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" data-act="img-descargar"><svg class="i sm"><use href="#i-download"/></svg>Descargar</button><button class="btn-save" data-act="img-compartir"><svg class="i sm"><use href="#i-share"/></svg>Compartir</button></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: TAREA ═══ -->
 <div class="modal-overlay" id="tarea-overlay">
   <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="tarea-title">
@@ -411,6 +486,8 @@
     <button class="modal-close" data-act="cerrar" data-v="mas-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
     <div class="modal-head"><h2 class="modal-title">Más</h2></div>
     <div class="sheet-list">
+      <button class="sheet-item" data-act="mas-ir" data-v="citas"><svg class="i"><use href="#i-quote"/></svg>Citas</button>
+      <button class="sheet-item" data-act="mas-ir" data-v="resumen"><svg class="i"><use href="#i-sparkle"/></svg>Resumen del año</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="cronologia"><svg class="i"><use href="#i-clock"/></svg>Cronología</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="tareas"><svg class="i"><use href="#i-tasks"/></svg>Mis tareas</button>
       <button class="sheet-item" data-act="tema"><span data-tema-ico></span><span data-tema-txt>Modo oscuro</span></button>

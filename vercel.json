@@ -1,4 +1,12 @@
 {
+  "rewrites": [
+    { "source": "/e/:id", "destination": "/api/entrada?id=:id" },
+    { "source": "/r/:anio", "destination": "/api/entrada?anio=:anio" }
+  ],
+  "headers": [
+    { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/manifest.webmanifest", "headers": [{ "key": "Content-Type", "value": "application/manifest+json" }] }
+  ],
   "crons": [
     { "path": "/api/keepalive", "schedule": "0 7 * * *" }
   ]
