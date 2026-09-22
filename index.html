@@ -1456,6 +1456,25 @@ function runMigraciones(existing){
       }).then(()=>db.ref("migrations/m08_epicteto_reflexion").set(true));
     });
   });
+  db.ref("migrations/m09_sociedad_cansancio").once("value").then(snap=>{
+    if(snap.val())return;
+    db.ref("libros").once("value").then(s=>{
+      const books=s.val()?Object.values(s.val()):[];
+      const done=()=>db.ref("migrations/m09_sociedad_cansancio").set(true);
+      if(books.some(b=>(b.libro||"").toLowerCase().includes("sociedad del cansancio"))){done();return;}
+      const id=books.reduce((m,b)=>Math.max(m,+b.id||0),0)+1;
+      db.ref("libros/"+id).set({
+        id,tipo:"libro",libro:"La sociedad del cansancio",autor:"Byung-Chul Han",
+        fecha:"2026-09-22",estado:"terminado",progreso:100,dificultad:"Moderada",puntuacion:null,
+        tags:["Sociedad","Rendimiento","Introspección","Profundidad","Vínculos","Filosofía"],
+        tituloRef:"Tener más opciones no significa necesariamente ser más libre",
+        reflexion:"Exceso de posibilidades y dificultad para vincularse\nLa sociedad moderna ofrece tantas opciones, estímulos y posibilidades que comprometerse profundamente con una sola cosa, persona o camino se vuelve más difícil. Cuando siempre parece existir una alternativa mejor, los vínculos pueden volverse más frágiles y provisionales. Esa falta de arraigo externo puede terminar generando también una pérdida de conexión con uno mismo.\n\nInmediatez, estímulo constante y pérdida de introspección\nEl individuo moderno vive orientado hacia lo rápido, lo inmediato y lo efímero. El exceso de estímulos puede funcionar como una forma de evitar el silencio, el aburrimiento y el encuentro con uno mismo.\n\nEl exceso de actividad también puede ser una forma de huida\nEstar ocupado, mejorar, producir, entrenar, trabajar o aprender puede parecer siempre positivo, pero también puede convertirse en una forma de no detenerse a pensar.\n\nProfundidad frente a sustitución constante\nLa abundancia de opciones favorece probar muchas cosas, pero puede dificultar permanecer el tiempo suficiente como para construir profundidad.",
+        cita:"",
+        vida:"Tener más opciones no significa necesariamente ser más libre. A veces, elegir menos y profundizar más da más sentido que mantener abiertas infinitas posibilidades.\n\nSi necesito estar constantemente entretenido, ocupado o estimulado, quizá no estoy viviendo más intensamente, sino evitando estar conmigo mismo.\n\nNo todo lo que parece desarrollo es crecimiento real. También tengo que ser capaz de parar sin sentir culpa ni creer que estoy perdiendo el tiempo.\n\nNo siempre necesito algo nuevo. A veces necesito sostener, profundizar y tolerar la incomodidad suficiente como para que algo llegue a tener verdadero valor.",
+        tension:"",finalidad:"Autoconocimiento",categoria:"Filosofía",orden:null,notas:""
+      }).then(done);
+    });
+  });
   db.ref("migrations/m05_fix_reflexion_arte_pensar").once("value").then(snap=>{
     if(snap.val())return;
     const updates={
@@ -1467,27 +1486,25 @@ function runMigraciones(existing){
   });
 }
 
-function cargarDesdeStorage() {
+/* Escrituras de sincronización: solo con sesión iniciada (reglas ".write": "auth != null") */
+let _sincronizado=false;
+function sincronizarDatos(){
+  if(_sincronizado)return;_sincronizado=true;
   db.ref("libros").once("value").then(snapshot=>{
-    if(!snapshot.val()){
-      let seed=null;
-      try{const raw=localStorage.getItem("ensu-libros"),ver=localStorage.getItem("ensu-version");if(raw&&ver===DATA_VERSION)seed=JSON.parse(raw);}catch{}
-      if(!seed||!seed.length)seed=JSON.parse(JSON.stringify(DATOS_INICIALES));
-      const obj={};seed.forEach(l=>{obj[l.id]=l;});
-      db.ref("libros").set(obj);
-    } else {
-      const existing=snapshot.val();
-      const toAdd={};
-      DATOS_INICIALES.forEach(l=>{if(!existing[l.id])toAdd[l.id]=l;});
-      if(Object.keys(toAdd).length)db.ref("libros").update(toAdd);
-      runMigraciones(existing);
-    }
-    db.ref("libros").on("value",snap=>{
-      const data=snap.val();
-      libros=data?Object.values(data):[];
-      actualizarStats();renderFiltros();renderCards();actualizarAutocomplete();mostrarCitaAleatoria();
-      if(!_autoOpen){const p=new URLSearchParams(window.location.search).get("leer");if(p){_autoOpen=true;setTimeout(()=>abrirLeer(p),200);}}
-    });
+    const existing=snapshot.val()||{};
+    const toAdd={};
+    DATOS_INICIALES.forEach(l=>{if(!existing[l.id])toAdd[l.id]=l;});
+    if(Object.keys(toAdd).length)db.ref("libros").update(toAdd);
+    runMigraciones(existing);
+  });
+}
+
+function cargarDesdeStorage() {
+  db.ref("libros").on("value",snap=>{
+    const data=snap.val();
+    libros=data?Object.values(data):[];
+    actualizarStats();renderFiltros();renderCards();actualizarAutocomplete();mostrarCitaAleatoria();
+    if(!_autoOpen){const p=new URLSearchParams(window.location.search).get("leer");if(p){_autoOpen=true;setTimeout(()=>abrirLeer(p),200);}}
   });
 }
 
@@ -1836,7 +1853,7 @@ function setAdminMode(on){
   $("lock-icon").textContent=on?"🔓":"🔒";
   renderFiltros();renderCards();
 }
-firebase.auth().onAuthStateChanged(user=>setAdminMode(!!user));
+firebase.auth().onAuthStateChanged(user=>{setAdminMode(!!user);if(user)sincronizarDatos();});
 
 function abrirLoginModal(){
   if(isAdmin){$("login-section").style.display="none";$("logout-section").style.display="";}
