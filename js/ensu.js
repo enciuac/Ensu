@@ -12,15 +12,9 @@
 ════════════════════════════════════════════════════════════ */
 
 /* ══ 1. CONSTANTES ══ */
-const FIREBASE_CONFIG={
-  apiKey:"AIzaSyCzqDu7SLE_Gj8OoSWABn4RMyt5i3z1Y-Q",
-  authDomain:"ensu-tareas.firebaseapp.com",
-  databaseURL:"https://ensu-tareas-default-rtdb.firebaseio.com",
-  projectId:"ensu-tareas",
-  storageBucket:"ensu-tareas.firebasestorage.app",
-  messagingSenderId:"589644635319",
-  appId:"1:589644635319:web:fbe2e4073f8e4e49bac132"
-};
+/* Supabase: la clave publishable es pública por diseño; la protección la da RLS. */
+const SUPABASE_URL="https://wgtolhgtdpxasliaaxaa.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ze4N3Wl2SyqnBmEtRlcO-A_M1drZqmX";
 const TIPOS={
   libro:    {l:"Libro",     pl:"Libros",      c:"var(--accent)",i:"i-book"},
   articulo: {l:"Artículo",  pl:"Artículos",   c:"var(--indigo)",i:"i-doc"},
@@ -72,155 +66,140 @@ function plano(str){return String(str||"").replace(/\s+/g," ").trim();}
 let _toastT;
 function toast(msg,tipo){const t=$("toast");t.textContent=msg;t.className="toast show"+(tipo==="error"?" error":"");clearTimeout(_toastT);_toastT=setTimeout(()=>t.classList.remove("show"),tipo==="error"?5200:3000);}
 function errTxt(err){
-  const c=(err&&(err.code||err.message))||"";
-  if(/PERMISSION_DENIED|permission/i.test(c))return"Sin permiso para guardar. Inicia sesión de nuevo.";
-  if(/network|unavailable|offline/i.test(c))return"Sin conexión. Inténtalo de nuevo.";
+  const c=err?`${err.code||""} ${err.message||""}`:"";
+  if(/42501|row-level|permission|JWT|not authorized/i.test(c))return"Sin permiso para guardar. Inicia sesión de nuevo.";
+  if(/network|fetch|unavailable|offline/i.test(c))return"Sin conexión. Inténtalo de nuevo.";
+  if(/23514|check constraint/i.test(c))return"Algún dato no es válido. Revisa el formulario.";
   return"No se pudo guardar. Inténtalo de nuevo.";
 }
 
 /* ══ 3. STORE ══
-   Toda lectura/escritura pasa por aquí. Para migrar a otra base de datos
-   (p. ej. Supabase) solo hay que reescribir este bloque manteniendo su interfaz.
-   Estructura en Firebase:
-     libros/{id}             entradas públicas (sin notas privadas)
-     privado/entradas/{id}   entradas de tipo "privado"      (solo autor)
-     privado/notas/{id}      notas privadas de cada entrada  (solo autor)
-     tareas/{id}                                             (solo autor)
-     migrations/{nombre}                                     (solo autor)          */
+   Toda lectura/escritura pasa por aquí (Supabase). La seguridad la aplica la base
+   de datos con Row Level Security (ver supabase/01_esquema.sql):
+     entradas        públicas, salvo tipo "privado" (solo autor)
+     notas_privadas  solo autor
+     tareas          solo autor                                                    */
 const Store=(()=>{
-  let db,auth,admin=false,cargado=false,errorCarga=null;
-  let publicas=[],privadas={},notas={},tareas=[];
-  let subsPriv=[];
+  let sb,admin=false,cargado=false,errorCarga=null;
+  let entradasDb=[],notas={},tareas=[];
   const subs=new Set(),authSubs=new Set();
   const emit=()=>subs.forEach(f=>f());
-  const lista=v=>Object.values(v||{}).filter(x=>x&&typeof x==="object");
   const numOr=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d;};
 
-  function norm(e){
-    const n={...e};
-    n.id=Number(n.id);
-    n.tipo=TIPOS[n.tipo]?n.tipo:"libro";
-    n.estado=ESTADOS[n.estado]?n.estado:"terminado";
-    ["libro","autor","fecha","tituloRef","reflexion","cita","vida","tension","finalidad","categoria","dificultad","portada"].forEach(k=>{n[k]=n[k]==null?"":String(n[k]);});
-    n.tags=Array.isArray(n.tags)?n.tags.filter(Boolean).map(t=>String(t).trim()).filter(Boolean)
-          :(typeof n.tags==="string"?n.tags.split(",").map(t=>t.trim()).filter(Boolean):[]);
-    n.progreso=Math.min(100,Math.max(0,Math.round(numOr(n.progreso,n.estado==="terminado"?100:0))));
-    const p=numOr(n.puntuacion,0);n.puntuacion=p>=1?Math.min(10,Math.round(p)):null;
-    const pt=numOr(n.paginasTotal,0);n.paginasTotal=pt>0?Math.round(pt):null;
-    const pa=n.paginaActual==null||n.paginaActual===""?null:numOr(n.paginaActual,null);n.paginaActual=pa!=null&&pa>=0?Math.round(pa):null;
-    const o=numOr(n.orden,0);n.orden=o>0?Math.round(o):null;
-    n.portadaId=numOr(n.portadaId,0);
-    delete n.notas;
+  /* Base de datos (snake_case) → app (camelCase) */
+  function norm(r){
+    const n={
+      id:Number(r.id),tipo:TIPOS[r.tipo]?r.tipo:"libro",estado:ESTADOS[r.estado]?r.estado:"terminado",
+      libro:r.libro||"",autor:r.autor||"",fecha:r.fecha||"",tituloRef:r.titulo_ref||"",
+      reflexion:r.reflexion||"",cita:r.cita||"",vida:r.vida||"",tension:r.tension||"",
+      finalidad:r.finalidad||"",categoria:r.categoria||"",dificultad:r.dificultad||"",
+      tags:Array.isArray(r.tags)?r.tags.filter(Boolean):[],
+      progreso:Math.min(100,Math.max(0,numOr(r.progreso,0))),
+      puntuacion:r.puntuacion||null,paginasTotal:r.paginas_total||null,
+      paginaActual:r.pagina_actual==null?null:numOr(r.pagina_actual,null),
+      orden:r.orden||null,portada:r.portada||"",portadaId:numOr(r.portada_id,0)
+    };
     return n;
   }
-  const limpio=o=>JSON.parse(JSON.stringify(o)); // quita undefined (Firebase los rechaza)
+  /* App → base de datos. Solo incluye los campos presentes. */
+  const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id"};
+  function aDb(o){
+    const r={};
+    for(const[k,col]of Object.entries(MAPA)){
+      if(!(k in o))continue;
+      let v=o[k];
+      if(k==="fecha")v=/^\d{4}-\d{2}-\d{2}$/.test(v||"")?v:null;
+      else if(k==="tags")v=Array.isArray(v)?v:[];
+      else if(["puntuacion","paginasTotal","paginaActual","orden"].includes(k))v=v==null||v===""||!Number.isFinite(Number(v))?null:Math.round(Number(v));
+      else if(k==="progreso"||k==="portadaId")v=Math.round(numOr(v,0));
+      else v=v==null?"":String(v);
+      r[col]=v;
+    }
+    return r;
+  }
+  const ok=({data,error})=>{if(error)throw error;return data;};
+
+  async function cargarEntradas(){
+    try{
+      entradasDb=ok(await sb.from("entradas").select("*").order("id")).map(norm);
+      errorCarga=null;
+    }catch(err){errorCarga=err;console.warn("EnSu carga:",err&&err.message);}
+    cargado=true;emit();
+  }
+  async function cargarPrivado(){
+    if(!admin){notas={};tareas=[];return;}
+    try{
+      notas={};ok(await sb.from("notas_privadas").select("entrada_id,texto")).forEach(n=>{if(n.texto)notas[n.entrada_id]=n.texto;});
+      tareas=ok(await sb.from("tareas").select("*").order("id")).map(t=>({id:Number(t.id),titulo:t.titulo||"",detalles:t.detalles||"",estado:t.estado||"pendiente",fecha:t.fecha||""}));
+    }catch(err){console.warn("EnSu privado:",err&&err.message);}
+    emit();
+  }
+  /* Tiempo real: ante cualquier cambio se recarga la tabla afectada (son pocos datos). */
+  const timers={};
+  const recargar=(k,f)=>{clearTimeout(timers[k]);timers[k]=setTimeout(f,120);};
+  function suscribir(){
+    sb.channel("ensu")
+      .on("postgres_changes",{event:"*",schema:"public",table:"entradas"},()=>recargar("e",cargarEntradas))
+      .on("postgres_changes",{event:"*",schema:"public",table:"notas_privadas"},()=>recargar("p",cargarPrivado))
+      .on("postgres_changes",{event:"*",schema:"public",table:"tareas"},()=>recargar("p",cargarPrivado))
+      .subscribe();
+  }
+  async function comprobarAutor(session){
+    let es=false;
+    if(session){try{es=!!ok(await sb.rpc("es_autor"));}catch(_){es=false;}}
+    const cambio=es!==admin;admin=es;
+    if(cambio){await Promise.all([cargarEntradas(),cargarPrivado()]);authSubs.forEach(f=>f(admin));}
+    return es;
+  }
 
   function init(){
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db=firebase.database();auth=firebase.auth();
-    db.ref("libros").on("value",s=>{
-      publicas=lista(s.val()).map(norm).filter(e=>Number.isFinite(e.id));
-      cargado=true;errorCarga=null;emit();
-    },err=>{errorCarga=err;cargado=true;emit();});
-    auth.onAuthStateChanged(u=>{
-      admin=!!u;
-      if(u)suscribirPrivado();else desuscribirPrivado();
-      authSubs.forEach(f=>f(admin));emit();
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    cargarEntradas();
+    suscribir();
+    sb.auth.onAuthStateChange((evento,session)=>{
+      if(evento==="PASSWORD_RECOVERY"){setTimeout(()=>abrirNuevaPwd(),300);}
+      // Fuera del callback para no bloquear el cliente de auth
+      setTimeout(()=>comprobarAutor(session),0);
     });
+    authSubs.forEach(f=>f(false));
   }
-  function suscribirPrivado(){
-    desuscribirPrivado();
-    const onErr=err=>console.warn("EnSu privado:",err&&err.code);
-    const r1=db.ref("privado/entradas"),r2=db.ref("privado/notas"),r3=db.ref("tareas");
-    const f1=r1.on("value",s=>{privadas={};lista(s.val()).map(norm).forEach(e=>{if(Number.isFinite(e.id))privadas[e.id]={...e,tipo:"privado"};});emit();},onErr);
-    const f2=r2.on("value",s=>{const v=s.val()||{};notas={};Object.keys(v).forEach(k=>{if(v[k])notas[k]=String(v[k]);});emit();},onErr);
-    const f3=r3.on("value",s=>{tareas=lista(s.val()).filter(t=>t.id!=null).map(t=>({...t,id:Number(t.id),titulo:String(t.titulo||""),detalles:String(t.detalles||""),estado:t.estado||"pendiente",fecha:t.fecha||""}));emit();},onErr);
-    subsPriv=[[r1,f1],[r2,f2],[r3,f3]];
-  }
-  function desuscribirPrivado(){subsPriv.forEach(([r,f])=>r.off("value",f));subsPriv=[];privadas={};notas={};tareas=[];}
 
-  function entradas(){
-    const m=new Map();
-    publicas.forEach(e=>{if(e.tipo!=="privado"||admin)m.set(e.id,e);});
-    if(admin)Object.values(privadas).forEach(e=>m.set(e.id,e));
-    return[...m.values()].map(e=>admin&&notas[e.id]?{...e,notas:notas[e.id]}:e);
-  }
-  const nextId=()=>Math.max(0,...publicas.map(e=>e.id),...Object.keys(privadas).map(Number))+1;
-  const nodo=id=>privadas[id]?"privado/entradas":"libros";
+  function entradas(){return entradasDb.map(e=>admin&&notas[e.id]?{...e,notas:notas[e.id]}:e);}
 
-  /* Guarda UNA entrada (nunca reescribe la colección entera). */
-  function guardarEntrada(e){
-    const{notas:nt,...resto}=e;const id=Number(resto.id);
-    const datos=limpio({...resto,id});
-    const up={};
-    if(datos.tipo==="privado"){up[`privado/entradas/${id}`]=datos;up[`libros/${id}`]=null;}
-    else{up[`libros/${id}`]=datos;up[`privado/entradas/${id}`]=null;}
-    up[`privado/notas/${id}`]=nt&&nt.trim()?nt.trim():null;
-    return db.ref().update(up);
+  /* Guarda UNA entrada. Devuelve el id (nuevo o existente). */
+  async function guardarEntrada(e){
+    const fila=aDb(e);
+    let id=e.id!=null&&Number.isFinite(Number(e.id))?Number(e.id):null;
+    if(id!=null)ok(await sb.from("entradas").update(fila).eq("id",id));
+    else id=ok(await sb.from("entradas").insert(fila).select("id").single()).id;
+    const nt=(e.notas||"").trim();
+    if(nt)ok(await sb.from("notas_privadas").upsert({entrada_id:id,texto:nt}));
+    else if(notas[id])ok(await sb.from("notas_privadas").delete().eq("entrada_id",id));
+    await Promise.all([cargarEntradas(),cargarPrivado()]);
+    return id;
   }
-  const actualizarCampos=(id,campos)=>db.ref(`${nodo(id)}/${id}`).update(limpio(campos));
-  const eliminarEntrada=id=>db.ref().update({[`libros/${id}`]:null,[`privado/entradas/${id}`]:null,[`privado/notas/${id}`]:null});
-  const guardarTarea=t=>db.ref(`tareas/${t.id}`).set(limpio(t));
-  const eliminarTarea=id=>db.ref(`tareas/${id}`).remove();
-  const actualizarTarea=(id,c)=>db.ref(`tareas/${id}`).update(c);
-  const nextTareaId=()=>Math.max(0,...tareas.map(t=>t.id))+1;
-  const login=(email,pwd)=>auth.signInWithEmailAndPassword(email,pwd);
-  const logout=()=>auth.signOut();
-  const resetPassword=email=>auth.sendPasswordResetEmail(email);
-  const flag=nombre=>db.ref(`migrations/${nombre}`).once("value").then(s=>!!s.val());
-  const setFlag=nombre=>db.ref(`migrations/${nombre}`).set(true);
-  function copia(){
-    return{
-      exportado:new Date().toISOString(),
-      libros:publicas,
-      privado:{entradas:Object.values(privadas),notas},
-      tareas
-    };
+  async function actualizarCampos(id,campos){ok(await sb.from("entradas").update(aDb(campos)).eq("id",id));recargar("e",cargarEntradas);}
+  async function eliminarEntrada(id){ok(await sb.from("entradas").delete().eq("id",id));await cargarEntradas();}
+  async function guardarTarea(t){
+    const fila={titulo:t.titulo,detalles:t.detalles||"",estado:t.estado,fecha:/^\d{4}-\d{2}-\d{2}$/.test(t.fecha||"")?t.fecha:null};
+    if(t.id!=null)ok(await sb.from("tareas").update(fila).eq("id",t.id));
+    else ok(await sb.from("tareas").insert(fila));
+    await cargarPrivado();
   }
-  /* Migración de privacidad: saca notas y entradas privadas del nodo público. */
-  function moverPrivadoFueraDePublico(raw){
-    const up={};
-    raw.forEach(e=>{
-      const id=Number(e.id);if(!Number.isFinite(id))return;
-      if(e.notas&&String(e.notas).trim()){up[`privado/notas/${id}`]=String(e.notas);up[`libros/${id}/notas`]=null;}
-      if(e.tipo==="privado"){const{notas:_n,...r}=e;up[`privado/entradas/${id}`]=limpio(r);up[`libros/${id}`]=null;}
-    });
-    return Object.keys(up).length?db.ref().update(up):Promise.resolve();
-  }
-  const leerPublicoCrudo=()=>db.ref("libros").once("value").then(s=>lista(s.val()));
+  async function eliminarTarea(id){ok(await sb.from("tareas").delete().eq("id",id));await cargarPrivado();}
+  async function actualizarTarea(id,c){ok(await sb.from("tareas").update(c).eq("id",id));await cargarPrivado();}
+  async function login(email,pwd){const{error}=await sb.auth.signInWithPassword({email,password:pwd});if(error)throw error;const{data}=await sb.auth.getSession();if(!(await comprobarAutor(data.session))){await sb.auth.signOut();const e=new Error("no-autor");e.code="no-autor";throw e;}}
+  async function logout(){await sb.auth.signOut();await comprobarAutor(null);}
+  async function resetPassword(email){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;}
+  async function nuevaPassword(pwd){const{error}=await sb.auth.updateUser({password:pwd});if(error)throw error;}
+  function copia(){return{exportado:new Date().toISOString(),origen:"supabase",entradas:entradasDb,notas,tareas};}
 
-  return{init,entradas,nextId,guardarEntrada,actualizarCampos,eliminarEntrada,
-    tareas:()=>tareas,guardarTarea,eliminarTarea,actualizarTarea,nextTareaId,
-    login,logout,resetPassword,flag,setFlag,copia,moverPrivadoFueraDePublico,leerPublicoCrudo,
+  return{init,entradas,guardarEntrada,actualizarCampos,eliminarEntrada,
+    tareas:()=>tareas,guardarTarea,eliminarTarea,actualizarTarea,
+    login,logout,resetPassword,nuevaPassword,copia,
     isAdmin:()=>admin,cargado:()=>cargado,errorCarga:()=>errorCarga,
     onChange:f=>subs.add(f),onAuth:f=>authSubs.add(f)};
 })();
-
-/* Migraciones de datos: solo con sesión iniciada y una única vez cada una. */
-async function ejecutarMigraciones(){
-  try{
-    if(!(await Store.flag("m12_privacidad"))){
-      await Store.moverPrivadoFueraDePublico(await Store.leerPublicoCrudo());
-      await Store.setFlag("m12_privacidad");
-    }
-    if(!(await Store.flag("m11_cansancio_notas"))){
-      const e=Store.entradas().find(x=>norma(x.libro).includes("sociedad del cansancio"));
-      if(e){
-        const c={progreso:71,estado:"leyendo"};
-        if(!e.autor)c.autor="Byung-Chul Han";
-        if(!e.tituloRef)c.tituloRef="Tener más opciones no significa necesariamente ser más libre";
-        if(!e.reflexion)c.reflexion="Exceso de posibilidades y dificultad para vincularse\nLa sociedad moderna ofrece tantas opciones, estímulos y posibilidades que comprometerse profundamente con una sola cosa, persona o camino se vuelve más difícil. Cuando siempre parece existir una alternativa mejor, los vínculos pueden volverse más frágiles y provisionales. Esa falta de arraigo externo puede terminar generando también una pérdida de conexión con uno mismo.\n\nInmediatez, estímulo constante y pérdida de introspección\nEl individuo moderno vive orientado hacia lo rápido, lo inmediato y lo efímero. El exceso de estímulos puede funcionar como una forma de evitar el silencio, el aburrimiento y el encuentro con uno mismo.\n\nEl exceso de actividad también puede ser una forma de huida\nEstar ocupado, mejorar, producir, entrenar, trabajar o aprender puede parecer siempre positivo, pero también puede convertirse en una forma de no detenerse a pensar.\n\nProfundidad frente a sustitución constante\nLa abundancia de opciones favorece probar muchas cosas, pero puede dificultar permanecer el tiempo suficiente como para construir profundidad.";
-        if(!e.vida)c.vida="Tener más opciones no significa necesariamente ser más libre. A veces, elegir menos y profundizar más da más sentido que mantener abiertas infinitas posibilidades.\n\nSi necesito estar constantemente entretenido, ocupado o estimulado, quizá no estoy viviendo más intensamente, sino evitando estar conmigo mismo.\n\nNo todo lo que parece desarrollo es crecimiento real. También tengo que ser capaz de parar sin sentir culpa ni creer que estoy perdiendo el tiempo.\n\nNo siempre necesito algo nuevo. A veces necesito sostener, profundizar y tolerar la incomodidad suficiente como para que algo llegue a tener verdadero valor.";
-        if(!e.tags.length)c.tags=["Sociedad","Rendimiento","Introspección","Profundidad","Vínculos","Filosofía"];
-        if(!e.categoria)c.categoria="Filosofía";
-        if(!e.finalidad)c.finalidad="Autoconocimiento";
-        if(!e.dificultad)c.dificultad="Moderada";
-        await Store.actualizarCampos(e.id,c);
-        await Store.setFlag("m11_cansancio_notas");
-      }
-    }
-  }catch(err){console.warn("EnSu migraciones:",err&&err.code);}
-}
 
 /* ══ 4. PORTADAS ══
    Orden: URL manual (campo "portada") → id de Open Library guardado → búsqueda
@@ -455,7 +434,7 @@ function renderHomeGrid(){
   $("result-line").textContent=hayFiltro?`${lista.length} ${lista.length===1?"resultado":"resultados"}`:"";
   $("result-line").hidden=!hayFiltro;
   grid.innerHTML=lista.length?lista.map(cardHTML).join("")
-    :`<div class="empty-state">${icon("i-search")}<p>${F.q?`No hay resultados para «${esc(F.q)}».`:"No hay entradas con estos filtros."}</p>${hayFiltro?`<p style="margin-top:12px"><button class="btn-link" data-act="home-reset">Quitar filtros</button></p>`:""}</div>`;
+    :`<div class="empty-state">${icon(hayFiltro?"i-search":"i-book")}<p>${F.q?`No hay resultados para «${esc(F.q)}».`:hayFiltro?"No hay entradas con estos filtros.":"Todavía no hay entradas."}</p>${hayFiltro?`<p style="margin-top:12px"><button class="btn-link" data-act="home-reset">Quitar filtros</button></p>`:""}</div>`;
 }
 function llenarSelect(sel,opciones,placeholder,valor){
   sel.innerHTML=`<option value="">${placeholder}</option>`+opciones.map(o=>`<option value="${esc(o)}"${o===valor?" selected":""}>${esc(o)}</option>`).join("");
@@ -811,7 +790,7 @@ async function guardarForm(ev){
   const previa=Form.id!=null?visibles().find(x=>x.id===Form.id):null;
   const datos={
     ...(previa||{}),
-    id:Form.id!=null?Form.id:Store.nextId(),
+    id:Form.id!=null?Form.id:null,
     tipo:v("tipo"),estado,libro:v("libro"),autor:v("autor"),fecha:v("fecha"),
     paginasTotal:total,paginaActual,progreso,
     finalidad:v("finalidad"),categoria:v("categoria"),dificultad:v("dificultad"),
@@ -863,8 +842,8 @@ async function hacerLogin(){
   btn.disabled=true;
   try{await Store.login(email,pwd);cerrarModal("login-overlay");toast("Modo edición activado.");}
   catch(err){
-    const c=err&&err.code||"";
-    er.textContent=/too-many/.test(c)?"Demasiados intentos. Espera unos minutos.":/network/.test(c)?"Sin conexión.":"Email o contraseña incorrectos.";
+    const c=err?`${err.code||""} ${err.message||""} ${err.status||""}`:"";
+    er.textContent=/no-autor/.test(c)?"Esta cuenta no tiene permisos de autor.":/429|rate|too many/i.test(c)?"Demasiados intentos. Espera unos minutos.":/not confirmed/i.test(c)?"Confirma tu email antes de entrar.":/fetch|network/i.test(c)?"Sin conexión.":"Email o contraseña incorrectos.";
     er.classList.add("visible");
   }finally{btn.disabled=false;}
 }
@@ -873,6 +852,17 @@ async function recuperarPwd(){
   if(!email){er.textContent="Escribe tu email y pulsa de nuevo «¿Olvidaste la contraseña?».";er.classList.add("visible");$("login-email").focus();return;}
   try{await Store.resetPassword(email);er.classList.remove("visible");toast("Te hemos enviado un email para cambiar la contraseña.");}
   catch(_){er.textContent="No se pudo enviar el email. Revisa la dirección.";er.classList.add("visible");}
+}
+function abrirNuevaPwd(){$("pwd-nueva").value="";$("pwd-nueva2").value="";$("pwd-error").classList.remove("visible");abrirModal("pwd-overlay");}
+async function guardarNuevaPwd(){
+  const p1=$("pwd-nueva").value,p2=$("pwd-nueva2").value,er=$("pwd-error"),btn=$("pwd-btn");
+  er.classList.remove("visible");
+  if(p1.length<8){er.textContent="Usa al menos 8 caracteres.";er.classList.add("visible");return;}
+  if(p1!==p2){er.textContent="Las contraseñas no coinciden.";er.classList.add("visible");return;}
+  btn.disabled=true;
+  try{await Store.nuevaPassword(p1);cerrarModal("pwd-overlay");toast("Contraseña actualizada.");}
+  catch(_){er.textContent="No se pudo cambiar. Pide un enlace nuevo.";er.classList.add("visible");}
+  finally{btn.disabled=false;}
 }
 async function hacerLogout(){await Store.logout();cerrarModal("login-overlay");cerrarModal("mas-overlay");toast("Sesión cerrada.");if(App.vista==="tareas")ir("#/");}
 
@@ -911,7 +901,7 @@ async function guardarTarea(){
   const titulo=$("t-titulo").value.trim();
   if(!titulo){$("t-titulo").classList.add("invalido");$("err-t-titulo").classList.add("visible");$("t-titulo").focus();return;}
   const btn=$("t-guardar");btn.disabled=true;
-  const datos={id:_tareaId!=null?_tareaId:Store.nextTareaId(),titulo,detalles:$("t-detalles").value.trim(),estado:$("t-estado").value,fecha:$("t-fecha").value};
+  const datos={id:_tareaId,titulo,detalles:$("t-detalles").value.trim(),estado:$("t-estado").value,fecha:$("t-fecha").value};
   try{await Store.guardarTarea(datos);cerrarModal("tarea-overlay");toast(_tareaId!=null?"Tarea actualizada.":"Tarea creada.");}
   catch(err){toast(errTxt(err),"error");}finally{btn.disabled=false;}
 }
@@ -982,6 +972,7 @@ const ACCIONES={
   "t-guardar":()=>guardarTarea(),
   "login-go":()=>hacerLogin(),
   "login-reset":()=>recuperarPwd(),
+  "pwd-guardar":()=>guardarNuevaPwd(),
   recargar:()=>location.reload()
 };
 document.addEventListener("click",ev=>{
@@ -1042,16 +1033,13 @@ function init(){
   if(qs.get("leer"))history.replaceState(null,"",location.pathname+"#/leer/"+encodeURIComponent(qs.get("leer")));
   aplicarTema();
   initEventos();
-  let migrado=false;
   Store.onAuth(admin=>{
     document.body.classList.toggle("admin",admin);
     $$("[data-lock-ico]").forEach(el=>el.innerHTML=icon(admin?"i-unlock":"i-lock"));
     $$("[data-lock-txt]").forEach(el=>el.textContent=admin?"Cerrar sesión":"Acceso autor");
-    if(admin&&!migrado&&Store.cargado()){migrado=true;ejecutarMigraciones();}
     if(App.vista==="tareas"||parseHash().v==="tareas")onRoute();
   });
   Store.onChange(()=>{
-    if(Store.isAdmin()&&!migrado&&Store.cargado()){migrado=true;ejecutarMigraciones();}
     renderVista();
     if(App.leerId!=null)renderLeer(false);
   });

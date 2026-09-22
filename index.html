@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
+<link rel="preconnect" href="https://wgtolhgtdpxasliaaxaa.supabase.co">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>try{var s=localStorage.getItem("ensu-dark");if(s==="1"||(s===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");}catch(e){}</script>
 <link rel="stylesheet" href="css/ensu.css">
@@ -373,6 +374,20 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: NUEVA CONTRASEÑA (tras el email de recuperación) ═══ -->
+<div class="modal-overlay" id="pwd-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="pwd-title">
+    <div class="modal-bar"></div>
+    <div class="modal-head"><p class="eyebrow">Recuperar acceso</p><h2 class="modal-title" id="pwd-title" style="margin-top:6px">Nueva contraseña</h2></div>
+    <div class="modal-body">
+      <div class="form-g"><label for="pwd-nueva">Contraseña nueva</label><input type="password" id="pwd-nueva" autocomplete="new-password" minlength="8"></div>
+      <div class="form-g"><label for="pwd-nueva2">Repítela</label><input type="password" id="pwd-nueva2" autocomplete="new-password" minlength="8"></div>
+      <p class="field-err" id="pwd-error" role="alert"></p>
+    </div>
+    <div class="modal-foot"><button class="btn-save" id="pwd-btn" data-act="pwd-guardar"><span class="spin"></span>Guardar contraseña</button></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: TAREA ═══ -->
 <div class="modal-overlay" id="tarea-overlay">
   <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="tarea-title">
@@ -409,9 +424,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.min.js"></script>
 <script src="js/ensu.js"></script>
 <script>
 /* ── DEVTOOLS PREVENTION ── */
