@@ -100,12 +100,13 @@ const Store=(()=>{
       puntuacion:r.puntuacion||null,paginasTotal:r.paginas_total||null,
       paginaActual:r.pagina_actual==null?null:numOr(r.pagina_actual,null),
       orden:r.orden||null,portada:r.portada||"",portadaId:numOr(r.portada_id,0),
+      entradaPadre:r.entrada_padre?Number(r.entrada_padre):null,
       terminadoEn:r.terminado_en||""
     };
     return n;
   }
   /* App → base de datos. Solo incluye los campos presentes. */
-  const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id",terminadoEn:"terminado_en"};
+  const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id",terminadoEn:"terminado_en",entradaPadre:"entrada_padre"};
   function aDb(o){
     const r={};
     for(const[k,col]of Object.entries(MAPA)){
@@ -113,7 +114,7 @@ const Store=(()=>{
       let v=o[k];
       if(k==="fecha"||k==="terminadoEn")v=/^\d{4}-\d{2}-\d{2}$/.test(v||"")?v:null;
       else if(k==="tags")v=Array.isArray(v)?v:[];
-      else if(["puntuacion","paginasTotal","paginaActual","orden"].includes(k))v=v==null||v===""||!Number.isFinite(Number(v))?null:Math.round(Number(v));
+      else if(["puntuacion","paginasTotal","paginaActual","orden","entradaPadre"].includes(k))v=v==null||v===""||!Number.isFinite(Number(v))?null:Math.round(Number(v));
       else if(k==="progreso"||k==="portadaId")v=Math.round(numOr(v,0));
       else v=v==null?"":String(v);
       r[col]=v;
@@ -123,10 +124,14 @@ const Store=(()=>{
   const ok=({data,error})=>{if(error)throw error;return data;};
   /* Si aún no se ha ejecutado supabase/03_mejoras.sql, la columna terminado_en no existe:
      se reintenta sin ella para que guardar nunca falle por eso. */
-  const sinColumnaNueva=err=>/terminado_en/.test(`${err&&err.message} ${err&&err.details}`);
+  const columnaQueFalta=err=>{const m=/'([a-z_]+)' column|column "?([a-z_]+)"? does not exist/.exec(`${err&&err.message} ${err&&err.details}`);return m&&(m[1]||m[2]);};
   async function escribir(fn,fila){
-    try{return ok(await fn(fila));}
-    catch(err){if(!sinColumnaNueva(err)||!("terminado_en" in fila))throw err;const{terminado_en,...resto}=fila;return ok(await fn(resto));}
+    let datos={...fila};
+    for(let i=0;i<3;i++){
+      try{return ok(await fn(datos));}
+      catch(err){const col=columnaQueFalta(err);if(!col||!(col in datos))throw err;delete datos[col];}
+    }
+    return ok(await fn(datos));
   }
 
   async function cargarEntradas(){
@@ -644,6 +649,7 @@ function renderEtiqueta(){
 
 /* ── PANEL DE LECTURA ── */
 function abrirLeer(id){
+  if(App.leerId!==String(id))App.hijasTodas=false;
   App.leerId=String(id);
   const panel=$("leer-panel");
   if(!App.leerAbierto){
@@ -654,6 +660,13 @@ function abrirLeer(id){
   }
   renderLeer(true);
   if(!$$(".view.activa").length){$("view-home").classList.add("activa");renderHome();}
+}
+/* La columna derecha se fija arriba si cabe; si no, se fija por abajo para
+   poder leerla entera al desplazarse, sin barra de desplazamiento propia. */
+function ajustarLateral(){
+  const a=document.querySelector(".leer-side");if(!a)return;
+  const arriba=76,margen=28,h=a.offsetHeight,vh=window.innerHeight;
+  a.style.top=(h+arriba+margen>vh?Math.min(arriba,vh-h-margen):arriba)+"px";
 }
 function cerrarLeerPanel(){
   const panel=$("leer-panel");
@@ -689,12 +702,15 @@ function renderLeer(scrollTop){
       </div>
       <div class="leer-quick-row"><button class="chip-btn" data-act="q-terminado" data-v="${e.id}">${icon("i-check","sm")} Marcar como terminado</button></div>
     </div>`:"";
+  const padre=e.entradaPadre?visibles().find(x=>x.id===e.entradaPadre):null;
+  const hijas=visibles().filter(x=>x.entradaPadre===e.id).sort((a,b)=>fechaNum(b)-fechaNum(a));
   const eyebrow=`<div class="leer-eyebrow"><span class="badge" style="background:var(--surface2);color:var(--text2)">${ti.l}</span>${badgeFin(e)}${badgeEstado(e)}</div>`;
   const hero=`<header class="leer-hero${esLibro?"":" sin-portada"}">
       ${esLibro?Portadas.html(e,"L"):""}
       <div>${eyebrow}
         <h1 class="leer-libro">${esc(titulo(e))}</h1>
-        ${e.autor||(e.tipo==="reflexion"&&e.libro&&e.libro!==e.tituloRef)?`<p class="leer-autor">${e.autor?`de <b>${esc(e.autor)}</b>`:""}${e.tipo==="reflexion"&&e.libro&&e.libro!==e.tituloRef?`${e.autor?" · ":""}${esc(e.libro)}`:""}</p>`:""}
+        ${e.autor||(e.tipo==="reflexion"&&e.libro&&e.libro!==e.tituloRef)?`<p class="leer-autor">${e.autor?`de <b>${esc(e.autor)}</b>`:""}${e.tipo==="reflexion"&&e.libro&&e.libro!==e.tituloRef&&!(padre&&padre.libro===e.libro)?`${e.autor?" · ":""}${esc(e.libro)}`:""}</p>`:""}
+        ${padre?`<button class="chip-btn leer-padre" data-act="leer" data-v="${padre.id}">${icon("i-book","sm")} Sobre ${esc(padre.libro||titulo(padre))}</button>`:""}
         ${e.tags.length?`<div class="leer-tags">${e.tags.map(t=>`<span class="tag" data-act="tag" data-v="${esc(t)}">${esc(t)}</span>`).join("")}</div>`:""}
       </div>${quick}</header>`;
   const sec=(lbl,html)=>`<section class="leer-seccion"><p class="leer-sec-lbl">${lbl}</p>${html}</section>`;
@@ -702,8 +718,18 @@ function renderLeer(scrollTop){
   if(e.tipo!=="reflexion"&&e.tituloRef)body+=`<p class="leer-frase">${esc(e.tituloRef)}</p>`;
   if(e.reflexion)body+=sec(e.tipo==="articulo"?"Teoría":"Resumen",`<div class="leer-rich">${txRich(e.reflexion)}</div>`);
   if(e.cita)body+=`<figure class="leer-cita"><span class="leer-cita-mark">“</span><blockquote class="leer-cita-txt">${esc(e.cita)}</blockquote><button class="chip-btn leer-cita-btn" data-act="cita-img" data-v="${e.id}">${icon("i-image","sm")} Compartir como imagen</button></figure>`;
-  if(e.tension)body+=sec("Mi análisis",`<div class="leer-rich">${txRich(e.tension)}</div>`);
+  if(e.tension)body+=sec("Notas de lectura",`<div class="leer-rich">${txRich(e.tension)}</div>`);
   if(e.vida)body+=sec("Cómo lo aplico",`<div class="leer-rich">${txRich(e.vida)}</div>`);
+  const secLat=(lbl,html)=>`<section class="leer-seccion"><p class="leer-sec-lbl">${lbl}</p>${html}</section>`;
+  let lateral="";
+  const verTodas=App.hijasTodas||hijas.length<=3;
+  const muestra=verTodas?hijas:hijas.slice(0,3);
+  if(hijas.length)lateral+=secLat(`Mis reflexiones (${hijas.length})`,
+    `<div class="hijas">${muestra.map(h=>`<button class="hija" data-act="leer" data-v="${h.id}">
+      <span class="hija-fecha">${esc(fechaUI(h.fecha))}</span>
+      <span class="hija-t">${esc(titulo(h))}</span>
+      ${h.reflexion?`<span class="hija-x">${esc(plano(h.reflexion).slice(0,90))}…</span>`:""}
+    </button>`).join("")}${hijas.length>3?`<button class="hijas-mas" data-act="hijas-mas">${verTodas?"Ver menos":`Ver las ${hijas.length}`}</button>`:""}</div>`);
   if(admin&&esLibro&&(e.estado==="leyendo"||puntosDe(e).length>=2))body+=sec("Tu ritmo de lectura",ritmoHTML(e));
   if(admin&&e.notas)body+=sec("Notas privadas",`<div class="leer-notas">${esc(e.notas)}</div>`);
   if(!e.reflexion&&!e.vida&&!e.tension&&!e.cita)body+=`<p class="form-hint" style="margin-top:28px">Todavía no hay notas sobre esta lectura.</p>`;
@@ -717,13 +743,16 @@ function renderLeer(scrollTop){
     e.puntuacion&&["Puntuación",`${e.puntuacion} / 10`,e.puntuacion],
     e.orden&&POR_LEER.has(e.estado)&&["Orden en lista","#"+e.orden]
   ].filter(Boolean);
-  if(ficha.length)body+=sec("Ficha",`<div class="leer-ficha">${ficha.map(([k,v,p])=>`<div class="ficha-item"><p class="ficha-k">${k}</p><p class="ficha-v">${esc(v)}</p>${p?`<div class="rdots">${Array.from({length:10},(_,i)=>`<i class="${i<p?"on":""}"></i>`).join("")}</div>`:""}</div>`).join("")}</div>`);
-  cont.innerHTML=hero+`<div class="leer-body">${body}</div>`;
+  if(ficha.length)lateral+=secLat("Ficha",`<div class="leer-ficha">${ficha.map(([k,v,p])=>`<div class="ficha-item"><p class="ficha-k">${k}</p><p class="ficha-v">${esc(v)}</p>${p?`<div class="rdots">${Array.from({length:10},(_,i)=>`<i class="${i<p?"on":""}"></i>`).join("")}</div>`:""}</div>`).join("")}</div>`);
   // Relacionadas por etiquetas compartidas
   const tags=new Set(e.tags);
-  const rel=visibles().filter(x=>x.id!==e.id&&!POR_LEER.has(x.estado)).map(x=>({x,n:x.tags.filter(t=>tags.has(t)).length+(x.categoria&&x.categoria===e.categoria?.5:0)})).filter(r=>r.n>=1).sort((a,b)=>b.n-a.n).slice(0,4).map(r=>r.x);
-  $("leer-rel").innerHTML=rel.length?`<p class="leer-sec-lbl">También relacionado</p><div class="rel-grid">${rel.map(r=>{const t=tipoInfo(r.tipo);if(r.tipo==="libro")Portadas.pedir(r);return`<div class="rel-card" data-act="leer" data-v="${r.id}" tabindex="0">${r.tipo==="libro"?Portadas.html(r):`<div class="lib-ico" style="--tc:${t.c}">${icon(t.i)}</div>`}<div style="min-width:0"><p class="rel-tipo">${t.l}</p><p class="rel-titulo">${esc(titulo(r))}</p></div></div>`;}).join("")}</div>`:"";
+  const rel=visibles().filter(x=>x.id!==e.id&&!POR_LEER.has(x.estado)&&x.entradaPadre!==e.id&&x.id!==e.entradaPadre).map(x=>({x,n:x.tags.filter(t=>tags.has(t)).length+(x.categoria&&x.categoria===e.categoria?.5:0)})).filter(r=>r.n>=1).sort((a,b)=>b.n-a.n).slice(0,3).map(r=>r.x);
+  const relHtml=rel.length?secLat("También relacionado",`<div class="rel-grid">${rel.map(r=>{const t=tipoInfo(r.tipo);if(r.tipo==="libro")Portadas.pedir(r);return`<div class="rel-card" data-act="leer" data-v="${r.id}" tabindex="0">${r.tipo==="libro"?Portadas.html(r):`<div class="lib-ico" style="--tc:${t.c}">${icon(t.i)}</div>`}<div style="min-width:0"><p class="rel-tipo">${t.l}</p><p class="rel-titulo">${esc(titulo(r))}</p></div></div>`;}).join("")}</div>`):"";
+  lateral+=relHtml;
+  $("leer-rel").innerHTML="";
+  cont.innerHTML=hero+`<div class="leer-cols"><div class="leer-body">${body}</div>${lateral?`<aside class="leer-side">${lateral}</aside>`:""}</div>`;
   if(scrollTop)$("leer-panel").scrollTop=0;
+  requestAnimationFrame(ajustarLateral);
 }
 async function guardarProgresoRapido(id,terminar){
   const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
@@ -734,7 +763,7 @@ async function guardarProgresoRapido(id,terminar){
     if(!Number.isFinite(v)||v<0){toast("Introduce un número válido.","error");return;}
     if(e.paginasTotal){const pa=Math.min(v,e.paginasTotal);c.paginaActual=pa;c.progreso=Math.round(pa/e.paginasTotal*100);}
     else c.progreso=Math.min(100,v);
-    if(c.progreso>=100){c.estado="terminado";c.terminadoEn=hoyISO();}
+    if(c.progreso>=100){await Store.actualizarCampos(e.id,{...c,estado:e.estado});abrirFin(e.id);return;}
     else if(c.progreso>0&&POR_LEER.has(e.estado))c.estado="leyendo";
   }
   try{await Store.actualizarCampos(e.id,c);document.activeElement&&document.activeElement.blur();toast(c.estado==="terminado"?"¡Libro terminado! 🎉":"Progreso guardado.");renderLeer();}
@@ -759,12 +788,14 @@ function modalAbierto(){return $$(".modal-overlay.open").pop();}
 
 /* ══ 6. FORMULARIO DE ENTRADA (wizard) ══ */
 const Form={id:null,paso:0};
-const CAMPOS=["tipo","estado","libro","autor","fecha","paginasTotal","paginaActual","progreso","finalidad","categoria","dificultad","puntuacion","orden","tags","portada","portadaId","terminadoEn","tituloRef","reflexion","cita","vida","tension","notas"];
+const CAMPOS=["tipo","estado","libro","autor","fecha","paginasTotal","paginaActual","progreso","finalidad","categoria","dificultad","puntuacion","orden","tags","portada","portadaId","terminadoEn","entradaPadre","tituloRef","reflexion","cita","vida","tension","notas"];
 const fEl=k=>$("f-"+k);
 function prepararSelectsForm(){
   llenarSelect(fEl("finalidad"),opcionesDe("finalidad",FINALIDADES),"—","");
   llenarSelect(fEl("categoria"),opcionesDe("categoria",CATEGORIAS),"—","");
   fEl("dificultad").innerHTML=`<option value="">—</option>`+opcionesDe("dificultad",DIFICULTADES).map(d=>`<option>${esc(d)}</option>`).join("");
+  const libros=visibles().filter(e=>e.tipo==="libro").sort((a,b)=>a.libro.localeCompare(b.libro,"es"));
+  fEl("entradaPadre").innerHTML=`<option value="">— Ninguno —</option>`+libros.map(l=>`<option value="${l.id}">${esc(l.libro)}${l.autor?` · ${esc(l.autor)}`:""}</option>`).join("");
   $("dl-libros").innerHTML=[...new Set(visibles().map(e=>e.libro).filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join("");
   $("dl-autores").innerHTML=[...new Set(visibles().map(e=>e.autor).filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join("");
 }
@@ -795,6 +826,8 @@ function syncTipo(){
   const t=fEl("tipo").value,libro=t==="libro";
   $$(".solo-libro").forEach(el=>el.hidden=!libro);
   $("row-terminado").hidden=!(libro&&fEl("estado").value==="terminado");
+  $("row-padre").hidden=libro;
+  $("lbl-padre").textContent=t==="reflexion"?"¿Sobre qué libro es esta reflexión?":"¿Pertenece a algún libro?";
   $("lbl-libro").textContent=t==="articulo"?"Título del artículo o fuente":t==="reflexion"?"Fuente o inspiración (opcional)":"Título del libro";
   $("lbl-ref").innerHTML=t==="reflexion"?`Título de la reflexión <small>(obligatorio)</small>`:"Idea central en una frase";
 }
@@ -861,6 +894,7 @@ async function guardarForm(ev){
     puntuacion:num("puntuacion"),orden:num("orden"),
     tags:v("tags").split(",").map(t=>t.trim()).filter(Boolean),
     portada:v("portada"),portadaId:Number(v("portadaId"))||0,
+    entradaPadre:v("tipo")!=="libro"&&num("entradaPadre")?num("entradaPadre"):null,
     terminadoEn:estado==="terminado"?(v("terminadoEn")||(previa&&previa.estado==="terminado"?"":hoyISO())):"",
     tituloRef:v("tituloRef"),reflexion:fEl("reflexion").value.trim(),cita:v("cita"),
     vida:fEl("vida").value.trim(),tension:fEl("tension").value.trim(),notas:fEl("notas").value
@@ -1254,6 +1288,126 @@ async function compartirEnlace(url,title){
   }catch(err){if(err&&err.name!=="AbortError")toast("No se pudo copiar el enlace.","error");}
 }
 
+/* ══ BUSCADOR GENERAL ══
+   Busca en todo: títulos, autores, resúmenes, notas de lectura, citas,
+   cómo lo aplicas y etiquetas (y en tus notas privadas si eres el autor). */
+const Buscar={sel:0,res:[]};
+function abrirBuscar(){
+  $("buscar-q").value="";Buscar.sel=0;
+  renderBuscar();
+  abrirModal("buscar-overlay");
+  setTimeout(()=>$("buscar-q").focus(),80);
+}
+function resaltar(texto,q){
+  const t=esc(texto);
+  if(!q)return t;
+  const i=norma(texto).indexOf(q);
+  if(i<0)return t;
+  const ini=Math.max(0,i-60),fin=Math.min(texto.length,i+q.length+90);
+  const trozo=(ini>0?"…":"")+texto.slice(ini,fin)+(fin<texto.length?"…":"");
+  const j=norma(trozo).indexOf(q);
+  if(j<0)return esc(trozo);
+  return esc(trozo.slice(0,j))+"<mark>"+esc(trozo.slice(j,j+q.length))+"</mark>"+esc(trozo.slice(j+q.length));
+}
+function renderBuscar(){
+  const q=norma($("buscar-q").value.trim()),cont=$("buscar-res");
+  if(!q){
+    Buscar.res=[];
+    cont.innerHTML=`<p class="buscar-vacio">Escribe para buscar en toda tu biblioteca.</p>`
+      +`<div class="buscar-pista"><span><kbd>↑</kbd><kbd>↓</kbd> moverte</span><span><kbd>Enter</kbd> abrir</span><span><kbd>Esc</kbd> cerrar</span></div>`;
+    return;
+  }
+  const campos=e=>[["Título",titulo(e)],["Autor",e.autor],["Libro",e.libro],["Resumen",e.reflexion],
+    ["Notas de lectura",e.tension],["Cómo lo aplico",e.vida],["Cita",e.cita],["Etiquetas",e.tags.join(", ")],
+    ...(Store.isAdmin()&&e.notas?[["Notas privadas",e.notas]]:[])];
+  Buscar.res=visibles().map(e=>{
+    const hit=campos(e).find(([,v])=>v&&norma(v).includes(q));
+    if(!hit)return null;
+    const exacto=norma(titulo(e)).startsWith(q)?3:norma(titulo(e)).includes(q)?2:hit[0]==="Autor"?1:0;
+    return{e,campo:hit[0],valor:hit[1],peso:exacto};
+  }).filter(Boolean).sort((a,b)=>b.peso-a.peso||fechaNum(b.e)-fechaNum(a.e)).slice(0,14);
+  if(Buscar.sel>=Buscar.res.length)Buscar.sel=0;
+  if(!Buscar.res.length){cont.innerHTML=`<p class="buscar-vacio">Sin resultados para «${esc($("buscar-q").value.trim())}».</p>`;return;}
+  cont.innerHTML=Buscar.res.map((r,i)=>{
+    const ti=tipoInfo(r.e.tipo);
+    if(r.e.tipo==="libro")Portadas.pedir(r.e);
+    const vis=r.e.tipo==="libro"?Portadas.html(r.e):`<div class="lib-ico" style="--tc:${ti.c}">${icon(ti.i)}</div>`;
+    return`<button class="buscar-item${i===Buscar.sel?" sel":""}" data-act="buscar-ir" data-v="${r.e.id}" data-i="${i}">
+      ${vis}
+      <span class="buscar-tx">
+        <span class="buscar-t">${resaltar(titulo(r.e),q)}</span>
+        <span class="buscar-x">${r.campo==="Título"?esc([r.e.autor,r.e.categoria].filter(Boolean).join(" · ")):`${r.campo}: ${resaltar(plano(r.valor),q)}`}</span>
+      </span>
+      <span class="buscar-tipo">${ti.l}</span>
+    </button>`;}).join("");
+}
+function moverBuscar(d){
+  if(!Buscar.res.length)return;
+  Buscar.sel=(Buscar.sel+d+Buscar.res.length)%Buscar.res.length;
+  $(".buscar-item").forEach((el,i)=>el.classList.toggle("sel",i===Buscar.sel));
+  const el=$(".buscar-item")[Buscar.sel];if(el)el.scrollIntoView({block:"nearest"});
+}
+function irABuscado(id){
+  cerrarModal("buscar-overlay");
+  App.leerDesdeApp=true;
+  ir("#/leer/"+id);
+}
+
+/* ══ TERMINAR UN LIBRO (fecha + nota) ══ */
+const Fin={id:null,nota:null};
+function abrirFin(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
+  Fin.id=e.id;Fin.nota=e.puntuacion||null;
+  $("fin-title").textContent=e.libro||titulo(e);
+  $("fin-fecha").value=e.terminadoEn||hoyISO();
+  pintarNotas();
+  abrirModal("fin-overlay");
+}
+function pintarNotas(){
+  $("fin-notas").innerHTML=Array.from({length:10},(_,i)=>
+    `<button type="button" class="nota-dot${Fin.nota===i+1?" on":""}" data-act="fin-nota" data-v="${i+1}">${i+1}</button>`).join("");
+}
+async function guardarFin(){
+  const e=visibles().find(x=>x.id===Fin.id);if(!e)return;
+  const btn=$("fin-btn");btn.disabled=true;
+  const campos={estado:"terminado",progreso:100,terminadoEn:$("fin-fecha").value||hoyISO()};
+  if(e.paginasTotal)campos.paginaActual=e.paginasTotal;
+  if(Fin.nota)campos.puntuacion=Fin.nota;
+  try{
+    await Store.actualizarCampos(Fin.id,campos);
+    cerrarModal("fin-overlay");
+    toast("¡Libro terminado! 🎉");
+    renderLeer();
+  }catch(err){toast(errTxt(err),"error");}
+  finally{btn.disabled=false;}
+}
+
+/* ══ MODO DE PRUEBA (solo en local, con ?demo=1) ══
+   Añade reflexiones ficticias a la vista para comprobar cómo queda la ficha.
+   No escribe nada en la base de datos ni se activa en la web publicada. */
+function modoDemo(){
+  const base={tipo:"reflexion",estado:"terminado",cita:"",vida:"",tension:"",finalidad:"Autoconocimiento",
+    categoria:"Filosofía",dificultad:"Accesible",progreso:100,puntuacion:null,paginasTotal:null,
+    paginaActual:null,orden:null,portada:"",portadaId:0,terminadoEn:"",autor:""};
+  const inventadas=[
+    {fecha:"2026-09-12",tituloRef:"El descanso también hay que defenderlo",tags:["Descanso","Atención"],
+     reflexion:"Parar no es dejar de producir: es recuperar la atención que el día te ha ido robando a trozos.\n\nSi solo descanso cuando ya no puedo más, no estoy descansando: estoy recuperándome."},
+    {fecha:"2026-08-20",tituloRef:"La multitarea no es atención, es dispersión",tags:["Atención","Hábitos"],
+     reflexion:"Creemos que hacemos más cuando en realidad saltamos de una cosa a otra sin terminar ninguna.\n\nAl final del día hay mucha actividad y poca huella."},
+    {fecha:"2026-07-05",tituloRef:"Nadie me obliga y aun así no paro",tags:["Exigencia","Rendimiento"],
+     reflexion:"La exigencia ya no viene de fuera: soy yo quien se pide rendir todos los días, incluso los que no toca."}
+  ];
+  const real=Store.entradas.bind(Store);
+  Store.entradas=()=>{
+    const todas=real();
+    const libro=todas.find(e=>e.tipo==="libro"&&norma(e.libro).includes("sociedad del cansancio"))
+              ||todas.find(e=>e.tipo==="libro");
+    if(!libro)return todas;
+    return[...todas,...inventadas.map((x,i)=>({...base,...x,id:90001+i,libro:libro.libro,entradaPadre:libro.id}))];
+  };
+  setTimeout(()=>toast("Modo de prueba: 3 reflexiones ficticias (no se guardan)"),900);
+}
+
 /* ══ APP INSTALABLE (service worker) ══ */
 function registrarSW(){
   if(!("serviceWorker" in navigator)||location.protocol==="file:")return;
@@ -1276,7 +1430,11 @@ const ACCIONES={
   "cerrar-leer":()=>cerrarLeer(),
   compartir:()=>compartir(),
   "q-guardar":v=>guardarProgresoRapido(v,false),
-  "q-terminado":v=>guardarProgresoRapido(v,true),
+  "q-terminado":v=>abrirFin(v),
+  "fin-nota":v=>{Fin.nota=Fin.nota===Number(v)?null:Number(v);pintarNotas();},
+  "fin-guardar":()=>guardarFin(),
+  buscar:()=>{cerrarModal("mas-overlay");abrirBuscar();},
+  "buscar-ir":(v,el)=>{Buscar.sel=Number(el.dataset.i)||0;irABuscado(v);},
   "home-tipo":v=>{App.home.tipo=v;renderHomeGrid();},
   "home-sort":()=>{App.home.desc=!App.home.desc;renderHomeGrid();},
   "home-filtros":()=>{$("filtros-panel").classList.toggle("open");renderFiltrosHome();},
@@ -1307,6 +1465,7 @@ const ACCIONES={
   "reto-guardar":()=>guardarReto(false),
   "reto-quitar":()=>guardarReto(true),
   "cita-img":v=>abrirImgCita(v),
+  "hijas-mas":()=>{App.hijasTodas=!App.hijasTodas;renderLeer(false);},
   "img-estilo":v=>{ImgCita.estilo=Number(v);pintarImgCita();},
   "img-descargar":()=>descargarImg(),
   "img-compartir":()=>compartirImg(),
@@ -1334,6 +1493,8 @@ document.addEventListener("click",ev=>{
   f(el.dataset.v,el,ev);
 });
 document.addEventListener("keydown",ev=>{
+  const escribiendo=/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName);
+  if(((ev.key==="/"&&!escribiendo)||((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==="k"))&&!modalAbierto()){ev.preventDefault();abrirBuscar();return;}
   if(ev.key==="Escape"){
     const m=modalAbierto();
     if(m){cerrarModal(m.id);return;}
@@ -1355,6 +1516,12 @@ function initEventos(){
   $("f-lib-categoria").addEventListener("change",e=>{App.lib.categoria=e.target.value;renderBiblioteca();});
   $("citas-q").addEventListener("input",()=>{clearTimeout(tq);tq=setTimeout(renderCitas,140);});
   fEl("portada-file").addEventListener("change",e=>subirPortada(e.target.files[0]));
+  $("buscar-q").addEventListener("input",()=>{Buscar.sel=0;renderBuscar();});
+  $("buscar-q").addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"){e.preventDefault();moverBuscar(1);}
+    else if(e.key==="ArrowUp"){e.preventDefault();moverBuscar(-1);}
+    else if(e.key==="Enter"&&Buscar.res[Buscar.sel]){e.preventDefault();irABuscado(Buscar.res[Buscar.sel].e.id);}
+  });
   $("reto-n").addEventListener("keydown",e=>{if(e.key==="Enter")guardarReto(false);});
   $("reto-n").addEventListener("input",e=>e.target.classList.remove("invalido"));
   $("t-sort").addEventListener("change",e=>{App.tareas.sort=e.target.value;renderTareas();});
@@ -1377,6 +1544,7 @@ function initEventos(){
   $("t-titulo").addEventListener("keydown",e=>{if(e.key==="Enter")guardarTarea();});
   $("leer-panel").addEventListener("scroll",e=>{const p=e.target;const max=p.scrollHeight-p.clientHeight;$("leer-line").style.width=(max>0?p.scrollTop/max*100:0)+"%";},{passive:true});
   window.addEventListener("scroll",()=>$("main-nav").classList.toggle("scrolled",window.scrollY>12),{passive:true});
+  let tr;window.addEventListener("resize",()=>{clearTimeout(tr);tr=setTimeout(ajustarLateral,120);});
   window.addEventListener("hashchange",onRoute);
   $("footer-year").textContent=new Date().getFullYear();
 }
@@ -1398,6 +1566,9 @@ function init(){
     renderVista();
     if(App.leerId!=null)renderLeer(false);
   });
+  // Modo de prueba: solo en local y con ?demo=1. Añade reflexiones ficticias a la
+  // vista para comprobar cómo queda; no toca la base de datos.
+  if(esLocal()&&new URLSearchParams(location.search).get("demo")==="1")modoDemo();
   try{Store.init();}catch(err){console.error(err);}
   onRoute();
 }

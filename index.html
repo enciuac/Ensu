@@ -85,6 +85,7 @@
     <div class="nav-actions">
       <button class="btn-nuevo admin-only" data-act="nuevo"><svg class="i sm"><use href="#i-plus"/></svg>Nueva entrada</button>
       <button class="btn-icon desk-only admin-only" data-act="copia" title="Descargar copia de seguridad" aria-label="Descargar copia de seguridad"><svg class="i sm"><use href="#i-download"/></svg></button>
+      <button class="btn-icon desk-only" data-act="buscar" title="Buscar (tecla /)" aria-label="Buscar"><svg class="i sm"><use href="#i-search"/></svg></button>
       <button class="btn-icon desk-only" data-act="tema" title="Cambiar tema" aria-label="Cambiar tema"><span data-tema-ico></span></button>
       <button class="btn-icon desk-only" data-act="login" title="Acceso del autor" aria-label="Acceso del autor"><span data-lock-ico><svg class="i sm"><use href="#i-lock"/></svg></span></button>
     </div>
@@ -326,6 +327,10 @@
             <div class="form-g"><label for="f-fecha">Fecha <small>(el público solo ve el año)</small></label><input type="date" id="f-fecha"></div>
             <div class="form-g"><label for="f-progreso">Progreso <small id="progreso-auto" hidden>· calculado por páginas</small> — <b id="progreso-val">0%</b></label><input type="range" id="f-progreso" min="0" max="100" value="0" style="margin-top:12px"></div>
           </div>
+          <div class="form-row" id="row-padre" hidden>
+            <div class="form-g"><label for="f-entradaPadre" id="lbl-padre">¿Sobre qué libro es esta reflexión?</label><select id="f-entradaPadre"></select></div>
+            <div class="form-g"></div>
+          </div>
           <div class="form-row solo-libro" id="row-terminado">
             <div class="form-g"><label for="f-terminadoEn">Terminado el <small>(cuenta para el reto del año)</small></label><input type="date" id="f-terminadoEn"></div>
             <div class="form-g"></div>
@@ -376,7 +381,7 @@
         <!-- Paso 3 -->
         <div class="wiz-page">
           <div class="form-g"><label for="f-vida">Cómo lo aplico a mi vida</label><textarea id="f-vida" rows="7" placeholder="¿Cómo aterrizas esto en tu día a día?"></textarea></div>
-          <div class="form-g"><label for="f-tension">Mi análisis / pregunta abierta</label><textarea id="f-tension" rows="4" placeholder="Lo que piensas tú, o una pregunta que esta lectura no resolvió…"></textarea></div>
+          <div class="form-g"><label for="f-tension">Notas de lectura <small>(lo que piensas mientras lees)</small></label><textarea id="f-tension" rows="4" placeholder="Ideas que subrayas, dudas, lo que te va removiendo…"></textarea></div>
           <div class="private-notes form-g"><label for="f-notas"><svg class="i sm"><use href="#i-lock"/></svg>Notas privadas <small>(solo tú las ves)</small></label><textarea id="f-notas" rows="3" placeholder="Apuntes rápidos, ideas, recordatorios…"></textarea></div>
         </div>
       </div>
@@ -436,6 +441,36 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: BUSCADOR GENERAL ═══ -->
+<div class="modal-overlay" id="buscar-overlay">
+  <div class="modal buscar-modal" role="dialog" aria-modal="true" aria-label="Buscar">
+    <div class="buscar-top">
+      <svg class="i"><use href="#i-search"/></svg>
+      <input type="search" id="buscar-q" placeholder="Buscar en libros, reflexiones, citas…" autocomplete="off" aria-label="Buscar">
+      <button class="btn-icon" data-act="cerrar" data-v="buscar-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="buscar-res" id="buscar-res"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: TERMINAR LIBRO ═══ -->
+<div class="modal-overlay" id="fin-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="fin-title">
+    <button class="modal-close" data-act="cerrar" data-v="fin-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-bar"></div>
+    <div class="modal-head"><p class="eyebrow">Lectura terminada</p><h2 class="modal-title" id="fin-title" style="margin-top:6px"></h2></div>
+    <div class="modal-body">
+      <div class="form-g"><label for="fin-fecha">¿Cuándo lo terminaste?</label><input type="date" id="fin-fecha"></div>
+      <div class="form-g">
+        <label>¿Qué nota le pones? <small>(opcional)</small></label>
+        <div class="notas-dots" id="fin-notas"></div>
+      </div>
+      <p class="form-hint">Cuenta para tu reto del año y para el resumen.</p>
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="fin-overlay">Cancelar</button><button class="btn-save" id="fin-btn" data-act="fin-guardar"><span class="spin"></span>Marcar como terminado</button></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: RETO ═══ -->
 <div class="modal-overlay" id="reto-overlay">
   <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="reto-title">
@@ -486,6 +521,7 @@
     <button class="modal-close" data-act="cerrar" data-v="mas-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
     <div class="modal-head"><h2 class="modal-title">Más</h2></div>
     <div class="sheet-list">
+      <button class="sheet-item" data-act="buscar"><svg class="i"><use href="#i-search"/></svg>Buscar</button>
       <button class="sheet-item" data-act="mas-ir" data-v="citas"><svg class="i"><use href="#i-quote"/></svg>Citas</button>
       <button class="sheet-item" data-act="mas-ir" data-v="resumen"><svg class="i"><use href="#i-sparkle"/></svg>Resumen del año</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="cronologia"><svg class="i"><use href="#i-clock"/></svg>Cronología</button>
