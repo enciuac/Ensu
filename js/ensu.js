@@ -1660,7 +1660,7 @@ function initEventos(){
   form.addEventListener("change",e=>{if(e.target.id==="f-estado"||e.target.id==="f-tipo"){syncProgreso();syncTipo();}});
   // Evita que Enter en un input envíe el formulario antes del último paso
   form.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"){e.preventDefault();if(Form.paso<2)siguiente();}});
-  $("login-pwd").addEventListener("keydown",e=>{if(e.key==="Enter")hacerLogin();});
+  $("login-form").addEventListener("submit",e=>{e.preventDefault();hacerLogin();});
   $("login-email").addEventListener("keydown",e=>{if(e.key==="Enter")$("login-pwd").focus();});
   $("t-titulo").addEventListener("keydown",e=>{if(e.key==="Enter")guardarTarea();});
   $("leer-panel").addEventListener("scroll",e=>{const p=e.target;const max=p.scrollHeight-p.clientHeight;$("leer-line").style.width=(max>0?p.scrollTop/max*100:0)+"%";},{passive:true});

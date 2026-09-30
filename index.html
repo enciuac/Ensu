@@ -148,7 +148,7 @@
       <div class="sec-head"><h2 class="sec-title">Lecturas y reflexiones</h2></div>
       <div class="toolbar">
         <label class="search"><span class="sr-only">Buscar</span><svg class="i sm"><use href="#i-search"/></svg>
-          <input type="search" id="home-q" placeholder="Buscar por título, autor, idea…" autocomplete="off">
+          <input type="search" id="home-q" name="busqueda-home" placeholder="Buscar por título, autor, idea…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other">
           <button class="search-clear" id="home-q-clear" data-act="home-q-clear" hidden aria-label="Borrar búsqueda"><svg class="i sm"><use href="#i-x"/></svg></button>
         </label>
         <div class="spacer"></div>
@@ -180,7 +180,7 @@
     <div class="lib-stats" id="lib-stats"></div>
     <div class="toolbar">
       <label class="search"><span class="sr-only">Buscar</span><svg class="i sm"><use href="#i-search"/></svg>
-        <input type="search" id="lib-q" placeholder="Buscar…" autocomplete="off">
+        <input type="search" id="lib-q" name="busqueda-biblioteca" placeholder="Buscar…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other">
         <button class="search-clear" id="lib-q-clear" data-act="lib-q-clear" hidden aria-label="Borrar búsqueda"><svg class="i sm"><use href="#i-x"/></svg></button>
       </label>
       <select class="sel-pill" id="f-lib-tipo" aria-label="Tipo"></select>
@@ -246,7 +246,7 @@
     </header>
     <div class="toolbar">
       <label class="search"><span class="sr-only">Buscar</span><svg class="i sm"><use href="#i-search"/></svg>
-        <input type="search" id="citas-q" placeholder="Buscar en las citas…" autocomplete="off">
+        <input type="search" id="citas-q" name="busqueda-citas" placeholder="Buscar en las citas…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other">
       </label>
     </div>
     <div class="citas-grid" id="citas-grid"></div>
@@ -411,13 +411,15 @@
     <div class="modal-bar"></div>
     <div id="login-section">
       <div class="modal-head"><p class="eyebrow">Acceso privado</p><h2 class="modal-title" id="login-title" style="margin-top:6px">Modo edición</h2><p class="modal-sub">Solo el autor puede editar este diario.</p></div>
-      <div class="modal-body">
-        <div class="form-g"><label for="login-email">Email</label><input type="email" id="login-email" autocomplete="email" placeholder="tu@email.com"></div>
-        <div class="form-g"><label for="login-pwd">Contraseña</label><input type="password" id="login-pwd" autocomplete="current-password" placeholder="••••••••"></div>
-        <p class="field-err" id="login-error" role="alert"></p>
-        <button type="button" class="btn-link" data-act="login-reset" style="margin:4px 0 8px">¿Olvidaste la contraseña?</button>
-      </div>
-      <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="login-overlay">Cancelar</button><button class="btn-save" id="login-btn" data-act="login-go"><span class="spin"></span>Entrar</button></div>
+      <form id="login-form" autocomplete="on">
+        <div class="modal-body">
+          <div class="form-g"><label for="login-email">Email</label><input type="email" id="login-email" name="email" autocomplete="username" placeholder="tu@email.com"></div>
+          <div class="form-g"><label for="login-pwd">Contraseña</label><input type="password" id="login-pwd" name="password" autocomplete="current-password" placeholder="••••••••"></div>
+          <p class="field-err" id="login-error" role="alert"></p>
+          <button type="button" class="btn-link" data-act="login-reset" style="margin:4px 0 8px">¿Olvidaste la contraseña?</button>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn-cancel" data-act="cerrar" data-v="login-overlay">Cancelar</button><button type="submit" class="btn-save" id="login-btn"><span class="spin"></span>Entrar</button></div>
+      </form>
     </div>
     <div id="logout-section" hidden>
       <div class="modal-head"><p class="eyebrow">Sesión iniciada</p><h2 class="modal-title" style="margin-top:6px">Modo edición activo</h2><p class="modal-sub">Cierra sesión para volver al modo lectura.</p></div>
@@ -477,7 +479,7 @@
   <div class="modal buscar-modal" role="dialog" aria-modal="true" aria-label="Buscar">
     <div class="buscar-top">
       <svg class="i"><use href="#i-search"/></svg>
-      <input type="search" id="buscar-q" placeholder="Buscar en libros, reflexiones, citas…" autocomplete="off" aria-label="Buscar">
+      <input type="search" id="buscar-q" name="busqueda-general" placeholder="Buscar en libros, reflexiones, citas…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" aria-label="Buscar">
       <button class="btn-icon" data-act="cerrar" data-v="buscar-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
     </div>
     <div class="buscar-res" id="buscar-res"></div>
