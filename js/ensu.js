@@ -1423,7 +1423,8 @@ function takeawaysHTML(e){
 }
 
 /* ── Qué secciones quedan abiertas: lo elige el lector y se recuerda ── */
-const SECCIONES_ABIERTAS=["takeaways","resumen","teoria"];
+// Todas empiezan cerradas; si abres una, se recuerda para la próxima vez
+const SECCIONES_ABIERTAS=[];
 let _secs=null;
 function secsGuardadas(){
   if(_secs)return _secs;
