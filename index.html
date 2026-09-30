@@ -25,7 +25,8 @@
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link rel="preconnect" href="https://wgtolhgtdpxasliaaxaa.supabase.co">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script>try{var s=localStorage.getItem("ensu-dark");if(s==="1"||(s===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");}catch(e){}</script>
+<script>try{var s=localStorage.getItem("ensu-dark"),d=s==="1"||(s===null&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+if(d){document.documentElement.classList.add("dark");var m=document.querySelector('meta[name="theme-color"]');if(m)m.content="#0E0E10";}}catch(e){}</script>
 <link rel="stylesheet" href="css/ensu.css">
 </head>
 <body>
@@ -104,7 +105,7 @@
     <a href="#/biblioteca" class="bnav-btn" data-nav="biblioteca"><svg class="i"><use href="#i-library"/></svg><span>Biblioteca</span></a>
     <button class="bnav-btn admin-only" data-act="nuevo" aria-label="Nueva entrada"><span class="bnav-plus"><svg class="i"><use href="#i-plus"/></svg></span></button>
     <a href="#/cronologia" class="bnav-btn non-admin-only" data-nav="cronologia"><svg class="i"><use href="#i-clock"/></svg><span>Cronología</span></a>
-    <a href="#/estadisticas" class="bnav-btn" data-nav="estadisticas"><svg class="i"><use href="#i-chart"/></svg><span>Estadísticas</span></a>
+    <a href="#/citas" class="bnav-btn" data-nav="citas"><svg class="i"><use href="#i-quote"/></svg><span>Citas</span></a>
     <button class="bnav-btn" data-act="mas"><svg class="i"><use href="#i-more"/></svg><span>Más</span></button>
   </div>
 </nav>
@@ -211,6 +212,10 @@
     <a class="resumen-cta" id="stats-resumen" href="#/resumen"></a>
     <div class="stats-card"><h3 id="stats-act-title">Actividad</h3><div id="stats-actividad"></div></div>
     <div class="stats-card admin-only"><h3>Páginas leídas por semana</h3><div id="stats-ritmo"></div></div>
+    <div class="stats-2">
+      <div class="stats-card"><h3>Libros terminados por año</h3><div id="stats-porano"></div></div>
+      <div class="stats-card"><h3>Cómo puntúo</h3><div id="stats-notas"></div><p class="form-hint admin-only" id="stats-sinnota" hidden></p></div>
+    </div>
     <div class="stats-2">
       <div class="stats-card"><h3>Categorías</h3><div id="stats-categorias"></div></div>
       <div class="stats-card"><h3>Por tipo</h3><div id="stats-tipos"></div></div>
@@ -465,8 +470,7 @@
     <button class="leer-back" data-act="cerrar-lector"><svg class="i"><use href="#i-arrow-l"/></svg>Volver</button>
     <span class="lector-titulo" id="lector-titulo"></span>
     <div class="lector-herr" id="lector-epub">
-      <button class="btn-icon" data-act="lector-menos" title="Letra más pequeña" aria-label="Letra más pequeña">A−</button>
-      <button class="btn-icon" data-act="lector-mas" title="Letra más grande" aria-label="Letra más grande">A+</button>
+      <button class="btn-icon" data-act="lector-ops" title="Opciones de lectura" aria-label="Opciones de lectura">Aa</button>
       <button class="btn-icon" data-act="marcador" title="Marcar esta página" aria-label="Marcar esta página"><svg class="i sm"><use href="#i-marcador"/></svg></button>
       <button class="btn-icon" data-act="marcas-abrir" title="Índice y marcas" aria-label="Índice y marcas"><svg class="i sm"><use href="#i-lista"/></svg></button>
     </div>
@@ -478,13 +482,39 @@
       <div class="lector-marcas-top">
         <div class="lector-tabs" role="tablist">
           <button class="lector-tab activo" data-act="lector-tab" data-v="indice" role="tab">Índice</button>
-          <button class="lector-tab" data-act="lector-tab" data-v="marcas" role="tab">Mis marcas <span id="lector-marcas-n"></span></button>
+          <button class="lector-tab" data-act="lector-tab" data-v="buscar" role="tab">Buscar</button>
+          <button class="lector-tab" data-act="lector-tab" data-v="marcas" role="tab">Marcas <span id="lector-marcas-n"></span></button>
         </div>
         <button class="btn-icon" data-act="marcas-cerrar" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
       </div>
       <div class="lector-marcas-lista" id="lector-indice-lista"></div>
+      <div class="lector-marcas-lista" id="lector-buscar-lista" hidden>
+        <div class="buscar-libro-caja">
+          <input type="search" id="lector-q" placeholder="Buscar en el libro…" name="q-libro" autocomplete="off" data-lpignore="true" data-1p-ignore aria-label="Buscar en el libro">
+        </div>
+        <div id="lector-q-res"></div>
+      </div>
       <div class="lector-marcas-lista" id="lector-marcas-lista" hidden></div>
     </aside>
+  </div>
+  <div class="lector-ops" id="lector-ops" hidden>
+    <div class="ops-fila"><span>Tamaño</span><div class="ops-btns">
+      <button class="ops-b" data-act="lector-menos" aria-label="Letra más pequeña">A−</button>
+      <button class="ops-b" data-act="lector-mas" aria-label="Letra más grande">A+</button></div></div>
+    <div class="ops-fila"><span>Interlineado</span><div class="ops-btns">
+      <button class="ops-b" data-act="lector-inter" data-v="-1" aria-label="Menos interlineado">−</button>
+      <button class="ops-b" data-act="lector-inter" data-v="1" aria-label="Más interlineado">+</button></div></div>
+    <div class="ops-fila"><span>Ancho</span><div class="ops-btns" id="ops-ancho">
+      <button class="ops-b" data-act="lector-ancho" data-v="estrecho">Estrecho</button>
+      <button class="ops-b" data-act="lector-ancho" data-v="normal">Normal</button>
+      <button class="ops-b" data-act="lector-ancho" data-v="ancho">Ancho</button></div></div>
+    <div class="ops-fila"><span>Letra</span><div class="ops-btns" id="ops-fuente">
+      <button class="ops-b" data-act="lector-fuente" data-v="serif">Serif</button>
+      <button class="ops-b" data-act="lector-fuente" data-v="sans">Sans</button></div></div>
+    <div class="ops-fila"><span>Fondo</span><div class="ops-btns" id="ops-tema">
+      <button class="ops-b" data-act="lector-tema" data-v="claro">Claro</button>
+      <button class="ops-b" data-act="lector-tema" data-v="sepia">Sepia</button>
+      <button class="ops-b" data-act="lector-tema" data-v="oscuro">Oscuro</button></div></div>
   </div>
   <div class="lector-sel" id="lector-sel" hidden>
     <p class="lector-sel-txt" id="lector-sel-txt"></p>
@@ -632,12 +662,13 @@
     <div class="modal-head"><h2 class="modal-title">Más</h2></div>
     <div class="sheet-list">
       <button class="sheet-item" data-act="buscar"><svg class="i"><use href="#i-search"/></svg>Buscar</button>
-      <button class="sheet-item" data-act="mas-ir" data-v="citas"><svg class="i"><use href="#i-quote"/></svg>Citas</button>
+      <button class="sheet-item" data-act="mas-ir" data-v="estadisticas"><svg class="i"><use href="#i-chart"/></svg>Estadísticas</button>
       <button class="sheet-item" data-act="mas-ir" data-v="resumen"><svg class="i"><use href="#i-sparkle"/></svg>Resumen del año</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="cronologia"><svg class="i"><use href="#i-clock"/></svg>Cronología</button>
       <button class="sheet-item" data-act="mas-ir" data-v="lector"><svg class="i"><use href="#i-book"/></svg>Libros para leer</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="tareas"><svg class="i"><use href="#i-tasks"/></svg>Mis tareas</button>
       <button class="sheet-item" data-act="tema"><span data-tema-ico></span><span data-tema-txt>Modo oscuro</span></button>
+      <button class="sheet-item admin-only" data-act="guardar-portadas"><svg class="i"><use href="#i-image"/></svg>Guardar portadas en mi almacén</button>
       <button class="sheet-item admin-only" data-act="copia"><svg class="i"><use href="#i-download"/></svg>Descargar copia de seguridad</button>
       <div class="sheet-sep"></div>
       <button class="sheet-item non-admin-only" data-act="login"><svg class="i"><use href="#i-lock"/></svg>Acceso autor</button>

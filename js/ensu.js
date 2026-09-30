@@ -390,7 +390,7 @@ const App={
 const visibles=()=>Store.entradas();
 const tipoInfo=t=>TIPOS[t]||TIPOS.libro;
 const badgeEstado=e=>e.tipo==="libro"?`<span class="badge b-${e.estado}">${ESTADOS[e.estado]}</span>`:"";
-const badgeFin=e=>e.finalidad?`<span class="badge b-${norma(e.finalidad).replace(/\s/g,"")}">${esc(e.finalidad)}</span>`:"";
+const badgeFin=e=>e.finalidad?`<span class="badge b-${norma(e.finalidad).replace(/\s/g,"")}" title="Para qué lo leí">${esc(e.finalidad)}</span>`:"";
 const titulo=e=>e.tipo==="reflexion"?(e.tituloRef||e.libro):(e.libro||e.tituloRef);
 const subtitulo=e=>e.tipo==="reflexion"?(e.libro&&e.libro!==e.tituloRef?e.libro:""):e.tituloRef;
 
@@ -592,7 +592,7 @@ function renderBiblioteca(){
     .sort((a,b)=>{const va=val[L.sort](a),vb=val[L.sort](b);return(va<vb?-1:va>vb?1:0)*L.dir||fechaNum(b)-fechaNum(a);});
   $("lib-count").textContent=`${lista.length} ${lista.length===1?"entrada":"entradas"}`;
   const cols=[["titulo","Título"],["autor","Autor"],["estado","Estado"],["dificultad","Dificultad"],["puntuacion","Nota"]];
-  const head=`<div class="lib-head"><span></span>${cols.map(([k,l])=>`<button class="${L.sort===k?"activo":""}" data-act="lib-sort" data-v="${k}">${l}${L.sort===k?(L.dir>0?" ↑":" ↓"):""}</button>`).join("")}<button class="${L.sort==="fecha"?"activo":""}" data-act="lib-sort" data-v="fecha">${L.sort==="fecha"?(L.dir>0?"Fecha ↑":"Fecha ↓"):"Fecha"}</button><span class="admin-only"></span></div>`;
+  const head=`<div class="lib-head"><span></span>${cols.map(([k,l])=>`<button class="${L.sort===k?"activo":""}" data-act="lib-sort" data-v="${k}">${l}${L.sort===k?(L.dir>0?" ↑":" ↓"):""}</button>`).join("")}<button class="${L.sort==="fecha"?"activo":""}" data-act="lib-sort" data-v="fecha">${Store.isAdmin()?"Fecha":"Año"}${L.sort==="fecha"?(L.dir>0?" ↑":" ↓"):""}</button><span class="admin-only"></span></div>`;
   if(!lista.length){cont.innerHTML=head+`<div class="empty-state">${icon("i-search")}<p>No hay entradas.</p></div>`;return;}
   cont.innerHTML=head+lista.map(e=>{
     const ti=tipoInfo(e.tipo);
@@ -654,6 +654,8 @@ function renderEstadisticas(){
     [E.filter(e=>POR_LEER.has(e.estado)).length,"Por leer",""],
     [E.filter(e=>e.tipo==="reflexion"||e.tipo==="articulo").length,"Reflexiones y artículos",""]
   ];
+  const punt=libros.filter(e=>e.puntuacion>0);
+  if(punt.length)cajas.push([(punt.reduce((s,e)=>s+e.puntuacion,0)/punt.length).toFixed(1).replace(".",","),"Nota media",`sobre ${punt.length} ${punt.length===1?"libro":"libros"}`]);
   if(paginas)cajas.push([paginas.toLocaleString("es"),"Páginas registradas",""]);
   if(admin)cajas.push([racha,"Racha",racha===1?"mes seguido":"meses seguidos"]);
   $("stats-boxes").innerHTML=cajas.map(([n,l,s])=>`<div class="stat-box"><b>${n}</b><span>${l}</span>${s?`<small>${esc(s)}</small>`:""}</div>`).join("");
@@ -674,6 +676,18 @@ function renderEstadisticas(){
     const cnt={};E.filter(e=>e.fecha&&!POR_LEER.has(e.estado)).forEach(e=>{const yy=e.fecha.slice(0,4);cnt[yy]=(cnt[yy]||0)+1;});
     act.innerHTML=barras(Object.entries(cnt).sort((a,b)=>b[0].localeCompare(a[0])));
   }
+  // Terminados por año: la fecha de fin si la hay, si no la de la entrada
+  const porAnio={};
+  term.forEach(e=>{const y=(e.terminadoEn||e.fecha||"").slice(0,4);if(y)porAnio[y]=(porAnio[y]||0)+1;});
+  $("stats-porano").innerHTML=barras(Object.entries(porAnio).sort((a,b)=>b[0].localeCompare(a[0])))||`<p class="form-hint">Sin datos</p>`;
+  // Reparto de notas, de la más alta a la más baja
+  const notas={};punt.forEach(e=>{notas[e.puntuacion]=(notas[e.puntuacion]||0)+1;});
+  $("stats-notas").innerHTML=punt.length
+    ?barras(Object.keys(notas).map(Number).sort((a,b)=>b-a).map(n=>[`${n} / 10`,notas[n]]))
+    :`<p class="form-hint">Todavía no has puntuado ningún libro.</p>`;
+  const sinNota=libros.filter(e=>e.estado==="terminado"&&!e.puntuacion).length;
+  $("stats-sinnota").hidden=!admin||!sinNota;
+  if(admin&&sinNota)$("stats-sinnota").textContent=`${sinNota} ${sinNota===1?"libro terminado está sin puntuar":"libros terminados están sin puntuar"}.`;
   const cuenta=f=>{const c={};E.forEach(e=>{const v=f(e);if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);};
   $("stats-categorias").innerHTML=barras(cuenta(e=>e.categoria).slice(0,8))||`<p class="form-hint">Sin datos</p>`;
   $("stats-tipos").innerHTML=barras(["libro","articulo","reflexion"].map(t=>[TIPOS[t].pl,E.filter(e=>e.tipo===t).length]));
@@ -799,6 +813,8 @@ function renderLeer(scrollTop){
       ${h.reflexion?`<span class="hija-x">${esc(plano(h.reflexion).slice(0,90))}…</span>`:""}
     </button>`).join("")}${hijas.length>3?`<button class="hijas-mas" data-act="hijas-mas">${verTodas?"Ver menos":`Ver las ${hijas.length}`}</button>`:""}</div>`);
   if(admin&&esLibro&&(e.estado==="leyendo"||puntosDe(e).length>=2))body+=sec("Tu ritmo de lectura",ritmoHTML(e));
+  const mias=admin?Store.marcas().filter(m=>m.entradaId===e.id):[];
+  if(mias.length)body+=sec(`Subrayados y notas (${mias.length}) <button class="chip-btn" data-act="exportar-marcas" data-v="${e.id}">${icon("i-download","sm")} Exportar</button>`,marcasFichaHTML(e,mias));
   if(admin&&e.notas)body+=sec("Notas privadas",`<div class="leer-notas">${esc(e.notas)}</div>`);
   if(!e.reflexion&&!e.vida&&!e.tension&&!e.cita)body+=`<p class="form-hint" style="margin-top:28px">Todavía no hay notas sobre esta lectura.</p>`;
   const ficha=[
@@ -807,6 +823,7 @@ function renderLeer(scrollTop){
     e.paginasTotal&&["Páginas",e.paginaActual!=null&&e.estado!=="terminado"?`${e.paginaActual} / ${e.paginasTotal}`:String(e.paginasTotal)],
     esLibro&&e.estado!=="terminado"&&["Progreso",e.progreso+"%"],
     e.categoria&&["Categoría",e.categoria],
+    e.finalidad&&["Finalidad",e.finalidad],
     e.dificultad&&["Dificultad",e.dificultad],
     e.puntuacion&&["Puntuación",`${e.puntuacion} / 10`,e.puntuacion],
     e.orden&&POR_LEER.has(e.estado)&&["Orden en lista","#"+e.orden]
@@ -854,9 +871,25 @@ function bloquearScroll(on){
   if(on&&_locks===1){_sy=window.scrollY;b.style.position="fixed";b.style.top=`-${_sy}px`;b.style.left="0";b.style.right="0";}
   if(!on&&_locks===0){b.style.position="";b.style.top="";b.style.left="";b.style.right="";window.scrollTo(0,_sy);}
 }
-function abrirModal(id){const o=$(id);if(o.classList.contains("open"))return;o.classList.add("open");bloquearScroll(true);const f=o.querySelector("input:not([type=hidden]),select,textarea");if(f&&window.innerWidth>767)setTimeout(()=>f.focus(),60);}
-function cerrarModal(id){const o=$(id);if(!o.classList.contains("open"))return;o.classList.remove("open");bloquearScroll(false);}
+function abrirModal(id){const o=$(id);if(o.classList.contains("open"))return;App.focoPrevio=document.activeElement;o.classList.add("open");bloquearScroll(true);const f=o.querySelector("input:not([type=hidden]),select,textarea");if(f&&window.innerWidth>767)setTimeout(()=>f.focus(),60);}
+function cerrarModal(id){
+  const o=$(id);if(!o.classList.contains("open"))return;
+  o.classList.remove("open");bloquearScroll(false);
+  const p=App.focoPrevio;App.focoPrevio=null;
+  if(p&&document.contains(p)&&!modalAbierto())try{p.focus();}catch(_){}
+}
 function modalAbierto(){return $$(".modal-overlay.open").pop();}
+const ENFOCABLES='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+/* Con un modal abierto, el tabulador da vueltas dentro de él */
+function atraparFoco(ev){
+  const m=modalAbierto();if(!m)return;
+  const f=$$(ENFOCABLES,m).filter(el=>el.offsetWidth||el.offsetHeight);
+  if(!f.length)return;
+  const pri=f[0],ult=f[f.length-1],act=document.activeElement;
+  if(!m.contains(act)){ev.preventDefault();pri.focus();}
+  else if(ev.shiftKey&&act===pri){ev.preventDefault();ult.focus();}
+  else if(!ev.shiftKey&&act===ult){ev.preventDefault();pri.focus();}
+}
 
 /* ══ 6. FORMULARIO DE ENTRADA (wizard) ══ */
 const Form={id:null,paso:0};
@@ -975,10 +1008,13 @@ async function guardarForm(ev){
   if(previa&&(previa.libro!==datos.libro||previa.autor!==datos.autor)&&!datos.portada&&datos.portadaId===previa.portadaId){datos.portadaId=0;Portadas.reintentar(datos);}
   const btn=$("wiz-submit");btn.disabled=true;
   try{
-    await Store.guardarEntrada(datos);
+    const guardada=await Store.guardarEntrada(datos);
     borrarBorrador();
     cerrarModal("form-overlay");
     toast(previa?"Entrada actualizada.":"Entrada guardada.");
+    // La portada se copia a nuestro almacén para que no dependa de otra web
+    const conId={...datos,id:datos.id||guardada||0};
+    if(portadaPrestada(conId)&&(!previa||previa.portada!==datos.portada))traerPortadaEnSilencio(conId);
   }catch(err){toast(errTxt(err),"error");}
   finally{btn.disabled=false;}
 }
@@ -1459,6 +1495,48 @@ async function guardarFin(){
    la imagen original. La IA (Gemini, a través de una función en Vercel) solo
    sirve para pasar la imagen a texto; siempre lo revisas antes de guardar. */
 const API_IA=()=>esLocal()?"https://ensu-eight.vercel.app/api/takeaway":"/api/takeaway";
+const API_PORTADA=()=>esLocal()?"https://ensu-eight.vercel.app/api/portada":"/api/portada";
+/* Una portada "prestada" es la que vive en el servidor de otro: hoy está y
+   mañana puede no estar. Las nuestras van al almacén de EnSu. */
+const portadaPrestada=e=>!!e.portada&&/^https?:\/\//i.test(e.portada)&&!/\/storage\/v1\/object\/public\/portadas\//.test(e.portada);
+async function traerPortada(id,url){
+  const token=await Store.token();
+  const r=await fetch(API_PORTADA(),{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({id,url})});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||"No se pudo guardar la portada.");
+  if(!d.yaEstaba)await Store.actualizarCampos(id,{portada:d.url});
+  return d.url;
+}
+/* En segundo plano, sin molestar: si falla, la portada de fuera sigue valiendo */
+function traerPortadaEnSilencio(e){
+  if(!Store.isAdmin()||!portadaPrestada(e)||!e.id)return;
+  traerPortada(e.id,e.portada).catch(err=>console.warn("EnSu portada:",err&&err.message));
+}
+/* Todas de golpe, con parte de lo que ha salido bien y lo que no */
+async function guardarPortadas(){
+  const lista=visibles().filter(portadaPrestada);
+  if(!lista.length){toast("Todas tus portadas ya están en tu almacén.");return;}
+  if(!confirm(`Se van a copiar ${lista.length} ${lista.length===1?"portada":"portadas"} a tu almacén de Supabase.\n\nAsí dejan de depender de webs de terceros. ¿Seguimos?`))return;
+  toast(`Copiando ${lista.length}…`);
+  const fallos=[];let ok=0;
+  for(const e of lista){
+    try{await traerPortada(e.id,e.portada);ok++;}
+    catch(err){fallos.push({e,msg:(err&&err.message)||"error"});}
+  }
+  if(!fallos.length){toast(`${ok} ${ok===1?"portada guardada":"portadas guardadas"} en tu almacén.`);return;}
+  console.warn("EnSu · portadas sin copiar:\n"+fallos.map(f=>`${titulo(f.e)}: ${f.msg}`).join("\n"));
+  toast(`${ok} copiadas, ${fallos.length} no.`,"error");
+  // Un enlace que ya no responde solo sirve para dejar el hueco en blanco:
+  // mejor quitarlo y que se vea la portada generada hasta que subas una.
+  const rotos=fallos.filter(f=>/respondió 4|respondió 5|no se pudo descargar|no es una imagen/i.test(f.msg));
+  if(!rotos.length)return;
+  if(!confirm(`${rotos.length===1?"Este enlace ya no responde":"Estos enlaces ya no responden"}:\n\n${rotos.map(f=>"· "+titulo(f.e)).join("\n")}\n\n¿Quito ${rotos.length===1?"el enlace roto":"los enlaces rotos"}? Se verá la portada generada hasta que subas una desde la ficha.`))return;
+  for(const f of rotos){
+    try{await Store.actualizarCampos(f.e.id,{portada:""});}
+    catch(err){console.warn("EnSu portada:",err&&err.message);}
+  }
+  toast(rotos.length===1?"Enlace roto quitado.":`${rotos.length} enlaces rotos quitados.`);
+}
 const Take={id:null,img:"",lista:[],idea:"",frase:"",generando:false};
 
 function takeawaysHTML(e){
@@ -1476,7 +1554,10 @@ function takeawaysHTML(e){
 
 /* ── Qué secciones quedan abiertas: lo elige el lector y se recuerda ── */
 // Todas empiezan cerradas; si abres una, se recuerda para la próxima vez
+/* Cerradas por defecto para el autor, que ya sabe qué hay dentro.
+   Al visitante se le abre el resumen: si no, la ficha parece vacía. */
 const SECCIONES_ABIERTAS=[];
+const SECCIONES_VISITA=["resumen"];
 let _secs=null;
 function secsGuardadas(){
   if(_secs)return _secs;
@@ -1485,7 +1566,8 @@ function secsGuardadas(){
 }
 function seccionAbierta(clave){
   const g=secsGuardadas();
-  return clave in g?!!g[clave]:SECCIONES_ABIERTAS.includes(clave);
+  if(clave in g)return !!g[clave];
+  return (Store.isAdmin()?SECCIONES_ABIERTAS:SECCIONES_VISITA).includes(clave);
 }
 function recordarSeccion(clave,abierta){
   const g=secsGuardadas();g[clave]=abierta;
@@ -1605,7 +1687,35 @@ function abrirFoto(url){
    nunca hacia atrás, para no pisar lo que avanzaste en el Kindle. */
 const EPUB_JS=["https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
                "https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"];
-const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100};
+const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100,
+  inter:1.75,ancho:"normal",fuente:"serif",tema:""};
+const FONDOS={claro:{bg:"#F7F4EF",fg:"#1A1714"},sepia:{bg:"#F3E9D8",fg:"#3A2F22"},oscuro:{bg:"#0E0E10",fg:"#EDE8E1"}};
+const ANCHOS={estrecho:820,normal:1180,ancho:1500};
+const LETRAS={serif:"Georgia, 'Cormorant Garamond', serif",sans:"'Inter', system-ui, sans-serif"};
+function leerOpciones(){
+  try{const o=JSON.parse(localStorage.getItem("ensu-lector-ops")||"{}");
+    if(o.inter)Lector.inter=o.inter;
+    if(ANCHOS[o.ancho])Lector.ancho=o.ancho;
+    if(LETRAS[o.fuente])Lector.fuente=o.fuente;
+    if(FONDOS[o.tema])Lector.tema=o.tema;
+  }catch(_){}
+  if(!Lector.tema)Lector.tema=document.documentElement.classList.contains("dark")?"oscuro":"claro";
+}
+function guardarOpciones(){
+  try{localStorage.setItem("ensu-lector-ops",JSON.stringify({inter:Lector.inter,ancho:Lector.ancho,fuente:Lector.fuente,tema:Lector.tema}));}catch(_){}
+}
+/* Cambiar ancho o interlineado obliga a repaginar el libro */
+function aplicarOpciones(repaginar){
+  const p=$("lector-panel"),hoja=$("lector-hoja");
+  p.dataset.tema=Lector.tema;
+  if(hoja)hoja.style.maxWidth=ANCHOS[Lector.ancho]+"px";
+  $$("#ops-ancho .ops-b").forEach(b=>b.classList.toggle("activo",b.dataset.v===Lector.ancho));
+  $$("#ops-fuente .ops-b").forEach(b=>b.classList.toggle("activo",b.dataset.v===Lector.fuente));
+  $$("#ops-tema .ops-b").forEach(b=>b.classList.toggle("activo",b.dataset.v===Lector.tema));
+  aplicarTemaLector();
+  guardarOpciones();
+  if(repaginar)recolocarLibro();
+}
 
 const conEbook=()=>visibles().filter(e=>e.ebookRuta).sort((a,b)=>{
   const est=x=>x.estado==="leyendo"?0:x.estado==="terminado"?2:1;
@@ -1647,12 +1757,14 @@ function cargarScript(src){
   });
 }
 
-async function abrirLector(id){
+async function abrirLector(id,cfiDestino){
   const e=visibles().find(x=>String(x.id)===String(id));
   if(!e||!e.ebookRuta)return;
-  Lector.id=e.id;Lector.cfi=e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;
+  Lector.id=e.id;Lector.cfi=cfiDestino||e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;
   $("lector-marcas").hidden=true;Lector.pestana="indice";cerrarSeleccion();
   Lector.tam=Number(localStorage.getItem("ensu-lector-tam"))||100;
+  leerOpciones();
+  $("lector-ops").hidden=true;
   $("lector-titulo").textContent=e.libro||titulo(e);
   $("lector-cont").innerHTML=`<p class="lector-cargando">Abriendo el libro…</p>`;
   $("lector-panel").classList.add("abierto");
@@ -1722,6 +1834,7 @@ async function mostrarEpub(datos,e){
   libro.loaded.navigation.then(()=>{if(!$("lector-marcas").hidden&&Lector.pestana==="indice")listarIndice();}).catch(()=>{});
   rend.on("relocated",()=>{cerrarSeleccion();marcarCapitulo();});
   pintarMarcas();
+  aplicarOpciones(false);
   // El porcentaje exacto necesita un índice; se calcula en segundo plano y se guarda en este navegador
   const clave=`ensu-locs-${e.ebookRuta}`;
   try{
@@ -1757,15 +1870,16 @@ function tamanoLector(d){
 }
 function aplicarTemaLector(){
   if(!Lector.rend)return;
-  const oscuro=document.documentElement.classList.contains("dark");
+  const f=FONDOS[Lector.tema]||FONDOS.claro,oscuro=Lector.tema==="oscuro";
   Lector.rend.themes.register("ensu",{
-    body:{background:oscuro?"#0E0E10":"#F7F4EF",color:oscuro?"#EDE8E1":"#1A1714",
-      "font-family":"Georgia, 'Cormorant Garamond', serif","line-height":"1.75","text-align":"justify",
+    body:{background:f.bg,color:f.fg,
+      "font-family":LETRAS[Lector.fuente]||LETRAS.serif,"line-height":String(Lector.inter),"text-align":"justify",
       "hyphens":"auto","-webkit-hyphens":"auto","padding":"0"},
     "p":{"margin":"0 0 1em","text-indent":"1.2em"},
     "h1, h2, h3":{"text-align":"left","line-height":"1.25"},
     "img":{"max-width":"100%","height":"auto"},
     "a":{color:oscuro?"#C4A97D":"#9C7F4C"},
+    "blockquote":{"border-left":"3px solid rgba(196,169,125,.6)","padding-left":"1em","margin":"1.2em 0","font-style":"italic"},
     "::selection":{background:"rgba(196,169,125,.35)"}
   });
   Lector.rend.themes.select("ensu");
@@ -1804,6 +1918,44 @@ async function cerrarLector(){
   renderVista();
 }
 
+/* ── Lo subrayado, visto desde la ficha del libro ── */
+const TIPO_MARCA={subrayado:"Subrayado",nota:"Nota",marcador:"Marcador"};
+function marcasFichaHTML(e,lista){
+  return `<div class="marcas-ficha">${lista.slice().reverse().map(m=>`<div class="marca-f">
+    <p class="marca-tipo">${TIPO_MARCA[m.tipo]||"Marca"}</p>
+    ${m.texto?`<blockquote class="marca-cita">${esc(m.texto)}</blockquote>`:""}
+    ${m.nota?`<p class="marca-mia">${esc(m.nota)}</p>`:""}
+    ${e.ebookRuta?`<button class="btn-link" data-act="ir-marca-libro" data-v="${e.id}|${esc(m.cfi)}">Abrir en el libro</button>`:""}
+  </div>`).join("")}</div>`;
+}
+function irMarcaLibro(v){
+  const i=String(v).indexOf("|");
+  if(i<0)return;
+  abrirLector(String(v).slice(0,i),String(v).slice(i+1));
+}
+/* 6 · Llevarse los subrayados a donde tomes notas */
+function exportarMarcas(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
+  const lista=Store.marcas().filter(m=>m.entradaId===e.id);
+  if(!lista.length){toast("Todavía no hay nada subrayado.");return;}
+  const lineas=[`# ${titulo(e)}`];
+  if(e.autor)lineas.push(`*${e.autor}*`);
+  lineas.push("");
+  lista.forEach(m=>{
+    lineas.push(`## ${TIPO_MARCA[m.tipo]||"Marca"}`);
+    if(m.texto)lineas.push("> "+m.texto.replace(/\s*\n+\s*/g," "));
+    if(m.nota){lineas.push("");lineas.push(m.nota);}
+    lineas.push("");
+  });
+  const nombre=norma(titulo(e)).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"libro";
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([lineas.join("\n")],{type:"text/markdown;charset=utf-8"}));
+  a.download=`${nombre}-subrayados.md`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("Subrayados descargados.");
+}
+
 /* ── Subrayados, notas y marcadores ── */
 const marcasDe=id=>Store.marcas().filter(m=>m.entradaId===Number(id));
 function pintarUna(m){
@@ -1821,6 +1973,10 @@ async function alSeleccionar(cfiRange){
   $("lector-sel-txt").textContent=Lector.sel.texto.slice(0,160)+(Lector.sel.texto.length>160?"…":"");
   b.hidden=false;
 }
+document.addEventListener("mousedown",ev=>{
+  const o=$("lector-ops");
+  if(o&&!o.hidden&&!o.contains(ev.target)&&!ev.target.closest('[data-act="lector-ops"]'))o.hidden=true;
+});
 function cerrarSeleccion(){
   $("lector-sel").hidden=true;Lector.sel=null;
   if(Lector.rend)try{Lector.rend.getContents().forEach(c=>c.window.getSelection().removeAllRanges());}catch(_){}
@@ -1856,9 +2012,15 @@ function cambiarPestana(cual){
   Lector.pestana=cual;
   $$(".lector-tab").forEach(b=>b.classList.toggle("activo",b.dataset.v===cual));
   $("lector-indice-lista").hidden=cual!=="indice";
+  $("lector-buscar-lista").hidden=cual!=="buscar";
   $("lector-marcas-lista").hidden=cual!=="marcas";
   listarMarcas();                 // así el contador de la pestaña siempre está al día
   if(cual==="indice")listarIndice();
+  if(cual==="buscar"){
+    const c=$("lector-q");
+    if(!c.dataset.listo){c.dataset.listo="1";c.addEventListener("input",pedirBusquedaLibro);}
+    if(window.innerWidth>=900)setTimeout(()=>c.focus(),60);
+  }
 }
 /* El índice viene dentro del EPUB; si el libro no lo trae, no hay nada que mostrar */
 function listarIndice(){
@@ -1879,6 +2041,34 @@ function marcarCapitulo(){
   // Se señala solo la primera entrada del capítulo, no también sus apartados
   const actual=caps.find(b=>{const h=(b.dataset.v||"").split("#")[0];return h===href||href.endsWith(h)||h.endsWith(href);});
   if(actual)actual.classList.add("activo");
+}
+/* La búsqueda recorre el libro sección a sección; es lo que permite epub.js */
+async function buscarEnLibro(q){
+  const libro=Lector.libro;if(!libro)return[];
+  const res=[];
+  for(const item of libro.spine.spineItems){
+    try{
+      await item.load(libro.load.bind(libro));
+      (item.find(q)||[]).forEach(h=>res.push(h));
+      item.unload();
+    }catch(_){}
+    if(res.length>=120)break;
+  }
+  return res;
+}
+let buscaLibroT=null,buscaLibroN=0;
+function pedirBusquedaLibro(){
+  const q=$("lector-q").value.trim();
+  clearTimeout(buscaLibroT);
+  if(q.length<3){$("lector-q-res").innerHTML=`<p class="form-hint" style="padding:16px">Escribe al menos tres letras.</p>`;return;}
+  buscaLibroT=setTimeout(async()=>{
+    const turno=++buscaLibroN;
+    $("lector-q-res").innerHTML=`<p class="form-hint" style="padding:16px">Buscando…</p>`;
+    const res=await buscarEnLibro(q);
+    if(turno!==buscaLibroN)return;
+    $("lector-q-res").innerHTML=res.length?res.map(r=>`<button class="cap cap-res" data-act="ir-cap-cfi" data-v="${esc(r.cfi)}">${resaltar(r.excerpt.trim(),norma(q))}</button>`).join("")
+      :`<p class="form-hint" style="padding:16px">Sin resultados para «${esc(q)}».</p>`;
+  },420);
 }
 function irACapitulo(href){
   if(!Lector.rend)return;
@@ -2059,6 +2249,11 @@ const ACCIONES={
   "lector-next":()=>pasarPagina(1),
   "lector-mas":()=>tamanoLector(10),
   "lector-menos":()=>tamanoLector(-10),
+  "lector-ops":()=>{const o=$("lector-ops");o.hidden=!o.hidden;if(!o.hidden)aplicarOpciones(false);},
+  "lector-inter":v=>{Lector.inter=Math.min(2.4,Math.max(1.3,+(Lector.inter+Number(v)*0.1).toFixed(2)));aplicarOpciones(true);},
+  "lector-ancho":v=>{Lector.ancho=v;aplicarOpciones(true);},
+  "lector-fuente":v=>{Lector.fuente=v;aplicarOpciones(true);},
+  "lector-tema":v=>{Lector.tema=v;aplicarOpciones(false);},
   "lector-saltar":v=>saltarA(v),
   "marca-subrayar":()=>crearMarca("subrayado"),
   "marca-nota":()=>pedirNota(),
@@ -2069,11 +2264,15 @@ const ACCIONES={
   "marcas-abrir":()=>{const p=$("lector-marcas");p.hidden=!p.hidden;if(!p.hidden)cambiarPestana(Lector.pestana||"indice");recolocarLibro();},
   "lector-tab":v=>cambiarPestana(v),
   "ir-cap":v=>irACapitulo(v),
+  "ir-cap-cfi":v=>{if(Lector.rend)Lector.rend.display(v);if(window.innerWidth<900){$("lector-marcas").hidden=true;recolocarLibro();}},
   "marcas-cerrar":()=>{$("lector-marcas").hidden=true;recolocarLibro();},
   "marca-ir":v=>{irAMarca(v);if(window.innerWidth<900){$("lector-marcas").hidden=true;recolocarLibro();}},
   "marca-borrar":v=>borrarMarca(v),
+  "exportar-marcas":v=>exportarMarcas(v),
+  "ir-marca-libro":v=>irMarcaLibro(v),
   "subir-ebook":v=>elegirEbook(v),
   "quitar-ebook":v=>quitarEbook(v),
+  "guardar-portadas":()=>{cerrarModal("mas-overlay");guardarPortadas();},
   "descargar-ebook":v=>descargarEbook(v),
   "bajar-ebook":v=>bajarEbook(v),
   "compartir-ebook":v=>alternarCompartir(v),
@@ -2117,9 +2316,11 @@ document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape"){
     const m=modalAbierto();
     if(m){cerrarModal(m.id);return;}
+    if($("lector-panel").classList.contains("abierto")){cerrarLector();return;}
     if(App.leerId!=null)cerrarLeer();
     return;
   }
+  if(ev.key==="Tab")atraparFoco(ev);
   if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches("[data-act][tabindex]")){ev.preventDefault();ev.target.click();}
 });
 /* Cerrar modal al pulsar fuera */
