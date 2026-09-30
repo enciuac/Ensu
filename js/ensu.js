@@ -103,13 +103,15 @@ const Store=(()=>{
       entradaPadre:r.entrada_padre?Number(r.entrada_padre):null,
       takeaways:Array.isArray(r.takeaways)?r.takeaways.map(t=>({titulo:String((t&&t.titulo)||""),texto:String((t&&t.texto)||"")})):[],
       takeawayIdea:r.takeaway_idea||"",takeawayFrase:r.takeaway_frase||"",takeawayImg:r.takeaway_img||"",
+      ebookRuta:r.ebook_ruta||"",ebookNombre:r.ebook_nombre||"",ebookTipo:r.ebook_tipo||"",ebookCfi:r.ebook_cfi||"",
       terminadoEn:r.terminado_en||""
     };
     return n;
   }
   /* App → base de datos. Solo incluye los campos presentes. */
   const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id",terminadoEn:"terminado_en",entradaPadre:"entrada_padre",
-    takeaways:"takeaways",takeawayIdea:"takeaway_idea",takeawayFrase:"takeaway_frase",takeawayImg:"takeaway_img"};
+    takeaways:"takeaways",takeawayIdea:"takeaway_idea",takeawayFrase:"takeaway_frase",takeawayImg:"takeaway_img",
+    ebookRuta:"ebook_ruta",ebookNombre:"ebook_nombre",ebookTipo:"ebook_tipo",ebookCfi:"ebook_cfi"};
   function aDb(o){
     const r={};
     for(const[k,col]of Object.entries(MAPA)){
@@ -230,6 +232,18 @@ const Store=(()=>{
     return sb.storage.from(bucket).getPublicUrl(ruta).data.publicUrl;
   }
   const subirPortada=(blob,id)=>subirArchivo("portadas",blob,id);
+  /* Libros: almacén privado, sin comprimir, y enlaces temporales para leerlos */
+  async function subirEbook(file,id,ext){
+    const ruta=`e${id||"x"}-${Date.now()}.${ext}`;
+    ok(await sb.storage.from("ebooks").upload(ruta,file,{contentType:ext==="pdf"?"application/pdf":"application/epub+zip",upsert:false}));
+    return{ruta};
+  }
+  const borrarEbook=ruta=>ruta?sb.storage.from("ebooks").remove([ruta]).then(({error})=>{if(error)throw error;}):Promise.resolve();
+  async function urlEbook(ruta){
+    const{data,error}=await sb.storage.from("ebooks").createSignedUrl(ruta,7200);
+    if(error)throw error;
+    return data.signedUrl;
+  }
   /* Token de la sesión: lo necesita la función de IA para comprobar quién eres */
   async function token(){const{data}=await sb.auth.getSession();return(data&&data.session&&data.session.access_token)||"";}
   async function resetPassword(email){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;}
@@ -240,6 +254,7 @@ const Store=(()=>{
     tareas:()=>tareas,guardarTarea,eliminarTarea,actualizarTarea,
     login,logout,resetPassword,nuevaPassword,copia,
     ajustes:()=>ajustes,guardarAjuste,historial:()=>historial,subirPortada,subirArchivo,token,
+    subirEbook,borrarEbook,urlEbook,
     isAdmin:()=>admin,cargado:()=>cargado,errorCarga:()=>errorCarga,
     onChange:f=>subs.add(f),onAuth:f=>authSubs.add(f)};
 })();
@@ -363,7 +378,7 @@ function parseHash(){
   return{v,p:param};
 }
 function ir(h){if(location.hash===h)onRoute();else location.hash=h;}
-const VISTAS={"":"home",inicio:"home",biblioteca:"biblioteca",cronologia:"cronologia",estadisticas:"estadisticas",tareas:"tareas",etiqueta:"etiqueta",citas:"citas",resumen:"resumen"};
+const VISTAS={"":"home",inicio:"home",biblioteca:"biblioteca",cronologia:"cronologia",estadisticas:"estadisticas",tareas:"tareas",etiqueta:"etiqueta",citas:"citas",resumen:"resumen",lector:"lector"};
 function onRoute(){
   const{v,p}=parseHash();
   if(v==="leer"){abrirLeer(p);return;}
@@ -374,12 +389,12 @@ function onRoute(){
   App.vista=vista;App.param=p;
   $$(".view").forEach(s=>s.classList.toggle("activa",s.id==="view-"+vista));
   $$("[data-nav]").forEach(b=>b.classList.toggle("activo",b.dataset.nav===vista));
-  document.title=({home:"EnSu — Biblioteca personal",biblioteca:"Biblioteca · EnSu",cronologia:"Cronología · EnSu",estadisticas:"Estadísticas · EnSu",tareas:"Tareas · EnSu",etiqueta:`#${p} · EnSu`,citas:"Citas · EnSu",resumen:"Resumen del año · EnSu"})[vista];
+  document.title=({home:"EnSu — Biblioteca personal",biblioteca:"Biblioteca · EnSu",cronologia:"Cronología · EnSu",estadisticas:"Estadísticas · EnSu",tareas:"Tareas · EnSu",etiqueta:`#${p} · EnSu`,citas:"Citas · EnSu",resumen:"Resumen del año · EnSu",lector:"Leer · EnSu"})[vista];
   if(cambio)window.scrollTo(0,0);
   renderVista();
 }
 function renderVista(){
-  const f={home:renderHome,biblioteca:renderBiblioteca,cronologia:renderCronologia,estadisticas:renderEstadisticas,tareas:renderTareas,etiqueta:renderEtiqueta,citas:renderCitas,resumen:renderResumen}[App.vista];
+  const f={home:renderHome,biblioteca:renderBiblioteca,cronologia:renderCronologia,estadisticas:renderEstadisticas,tareas:renderTareas,etiqueta:renderEtiqueta,citas:renderCitas,resumen:renderResumen,lector:renderLector}[App.vista];
   if(f)f();
 }
 
@@ -729,6 +744,18 @@ function renderLeer(scrollTop){
   };
   let body="";
   if(e.tipo!=="reflexion"&&e.tituloRef)body+=`<p class="leer-frase">${esc(e.tituloRef)}</p>`;
+  if(admin&&esLibro){
+    body+=sec("Archivo del libro",e.ebookRuta
+      ?`<div class="ebook-fila">
+          <div class="ebook-info">${icon("i-book")}<div><p class="ebook-n">${esc(e.ebookNombre||"Archivo")}</p><p class="form-hint">${esc(e.ebookTipo.toUpperCase())} · guardado en privado</p></div></div>
+          <div class="ebook-acts">
+            <button class="btn-sm" data-act="abrir-lector" data-v="${e.id}">Leer ahora</button>
+            <button class="btn-icon peligro" data-act="quitar-ebook" data-v="${e.id}" title="Quitar archivo" aria-label="Quitar archivo">${icon("i-trash","sm")}</button>
+          </div>
+        </div>`
+      :`<p class="form-hint">Sube el EPUB o el PDF y podrás leerlo desde «Leer». Solo tú tendrás acceso al archivo.</p>
+         <button class="chip-btn" style="margin-top:10px" data-act="subir-ebook" data-v="${e.id}">${icon("i-upload","sm")} Subir EPUB o PDF</button>`);
+  }
   const take=takeawaysHTML(e);
   if(take||(admin&&esLibro))body+=sec("Takeaways"+(admin?` <button class="chip-btn take-editar" data-act="take-editar" data-v="${e.id}">${icon("i-edit","sm")} ${take?"Editar":"Añadir"}</button>`:""),
     take||`<p class="form-hint">Sube la imagen con los takeaways del libro y la IA la pasa a texto.</p>`);
@@ -1040,7 +1067,7 @@ function aplicarTema(){
   $$("[data-tema-txt]").forEach(el=>el.textContent=dark?"Modo claro":"Modo oscuro");
   const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=dark?"#0E0E10":"#F7F4EF";
 }
-function alternarTema(){const d=document.documentElement.classList.toggle("dark");try{localStorage.setItem("ensu-dark",d?"1":"0");}catch(_){}aplicarTema();}
+function alternarTema(){const d=document.documentElement.classList.toggle("dark");try{localStorage.setItem("ensu-dark",d?"1":"0");}catch(_){}aplicarTema();if(typeof aplicarTemaLector==="function")aplicarTemaLector();}
 
 /* ══ RETO ANUAL ══ */
 const finLectura=e=>e.terminadoEn||e.fecha||"";
@@ -1546,6 +1573,197 @@ function abrirFoto(url){
   abrirModal("foto-overlay");
 }
 
+/* ══ LECTOR DE LIBROS (EPUB y PDF) ══
+   Los archivos viven en un almacén privado: solo se abren con tu sesión,
+   mediante enlaces temporales. El progreso sube solo mientras lees, pero
+   nunca hacia atrás, para no pisar lo que avanzaste en el Kindle. */
+const EPUB_JS=["https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+               "https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"];
+const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100};
+
+const conEbook=()=>visibles().filter(e=>e.ebookRuta).sort((a,b)=>{
+  const est=x=>x.estado==="leyendo"?0:x.estado==="terminado"?2:1;
+  return est(a)-est(b)||fechaNum(b)-fechaNum(a);
+});
+
+function renderLector(){
+  const cont=$("lector-grid");
+  if(!Store.isAdmin()){cont.innerHTML=`<div class="empty-state">${icon("i-lock")}<p>Inicia sesión para leer tus libros.</p></div>`;$("lector-sub").textContent="";return;}
+  if(estadoCarga(cont,3))return;
+  const lista=conEbook();
+  $("lector-sub").textContent=lista.length?`${lista.length} ${lista.length===1?"libro":"libros"} en tu estantería`:"";
+  cont.innerHTML=lista.length?lista.map(e=>{
+    Portadas.pedir(e);
+    return`<article class="lec-card" data-act="abrir-lector" data-v="${e.id}" tabindex="0">
+      ${Portadas.html(e)}
+      <div class="lec-body">
+        <p class="card-autor">${esc(e.autor||"")}</p>
+        <h3 class="lec-t">${esc(e.libro||titulo(e))}</h3>
+        <p class="lec-x">${esc(e.ebookTipo.toUpperCase())}${e.paginasTotal?` · ${e.paginasTotal} pág.`:""}</p>
+        <div class="ley-prog">
+          <div class="prog-meta"><span>${e.estado==="terminado"?"Terminado":e.progreso?"Seguir leyendo":"Empezar"}</span><b>${e.progreso}%</b></div>
+          <div class="prog-track"><div class="prog-fill" style="width:${e.progreso}%"></div></div>
+        </div>
+      </div>
+    </article>`;}).join("")
+    :`<div class="empty-state">${icon("i-book")}<p>Todavía no has subido ningún libro.</p><p class="form-hint" style="margin-top:8px">Abre un libro de tu biblioteca y súbelo desde su ficha.</p></div>`;
+}
+
+function cargarScript(src){
+  return new Promise((ok,mal)=>{
+    if([...document.scripts].some(s=>s.src===src))return ok();
+    const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>mal(new Error("No se pudo cargar el lector."));
+    document.head.appendChild(s);
+  });
+}
+
+async function abrirLector(id){
+  const e=visibles().find(x=>String(x.id)===String(id));
+  if(!e||!e.ebookRuta)return;
+  Lector.id=e.id;Lector.cfi=e.ebookCfi;Lector.pct=e.progreso||0;
+  Lector.tam=Number(localStorage.getItem("ensu-lector-tam"))||100;
+  $("lector-titulo").textContent=e.libro||titulo(e);
+  $("lector-cont").innerHTML=`<p class="lector-cargando">Abriendo el libro…</p>`;
+  $("lector-panel").classList.add("abierto");
+  requestAnimationFrame(()=>$("lector-panel").classList.add("open"));
+  bloquearScroll(true);
+  $("lector-epub").hidden=e.ebookTipo!=="epub";
+  try{
+    const url=await Store.urlEbook(e.ebookRuta);
+    if(e.ebookTipo==="pdf"){
+      $("lector-cont").innerHTML=`<iframe class="lector-pdf" src="${esc(url)}#view=FitH" title="${esc(e.libro)}"></iframe>`;
+      $("lector-pie").hidden=true;
+      return;
+    }
+    $("lector-pie").hidden=false;
+    for(const src of EPUB_JS)await cargarScript(src);
+    await mostrarEpub(url,e);
+  }catch(err){
+    $("lector-cont").innerHTML=`<p class="lector-cargando">${esc(err&&err.message?err.message:"No se pudo abrir el libro.")}</p>`;
+  }
+}
+
+async function mostrarEpub(url,e){
+  $("lector-cont").innerHTML="";
+  const libro=window.ePub(url);
+  Lector.libro=libro;
+  const rend=libro.renderTo("lector-cont",{width:"100%",height:"100%",flow:"paginated",spread:"none",allowScriptedContent:false});
+  Lector.rend=rend;
+  aplicarTemaLector();
+  await rend.display(Lector.cfi||undefined);
+  rend.on("relocated",loc=>{
+    Lector.cfi=loc.start.cfi;
+    if(loc.start.percentage)Lector.pct=Math.round(loc.start.percentage*100);
+    $("lector-pct").textContent=`${Lector.pct}%`;
+    $("lector-barra").style.width=`${Lector.pct}%`;
+    clearTimeout(Lector.guardando);
+    Lector.guardando=setTimeout(guardarPosicion,4000);
+  });
+  rend.on("keyup",ev=>teclasLector(ev));
+  // El porcentaje exacto necesita un índice; se calcula en segundo plano y se guarda en este navegador
+  const clave=`ensu-locs-${e.ebookRuta}`;
+  try{
+    const guardadas=localStorage.getItem(clave);
+    if(guardadas)libro.locations.load(guardadas);
+    else{await libro.locations.generate(1200);try{localStorage.setItem(clave,libro.locations.save());}catch(_){}}
+    const loc=rend.currentLocation();
+    if(loc&&loc.start)Lector.pct=Math.round((libro.locations.percentageFromCfi(loc.start.cfi)||0)*100);
+    $("lector-pct").textContent=`${Lector.pct}%`;
+    $("lector-barra").style.width=`${Lector.pct}%`;
+  }catch(_){}
+  // Si el progreso de la ficha va por delante (lo leíste en otro sitio), ofrecer saltar
+  const ficha=visibles().find(x=>x.id===Lector.id);
+  if(ficha&&ficha.progreso>Lector.pct+2){
+    $("lector-aviso").hidden=false;
+    $("lector-aviso").innerHTML=`Tu progreso está en el ${ficha.progreso}%. <button class="btn-link" data-act="lector-saltar" data-v="${ficha.progreso}">Saltar ahí</button>`;
+  }else $("lector-aviso").hidden=true;
+}
+
+async function saltarA(pct){
+  if(!Lector.libro||!Lector.rend)return;
+  try{
+    const cfi=Lector.libro.locations.cfiFromPercentage(Math.min(99,Number(pct))/100);
+    if(cfi)await Lector.rend.display(cfi);
+    $("lector-aviso").hidden=true;
+  }catch(_){}
+}
+function pasarPagina(d){if(Lector.rend)d>0?Lector.rend.next():Lector.rend.prev();}
+function tamanoLector(d){
+  Lector.tam=Math.min(180,Math.max(70,Lector.tam+d));
+  try{localStorage.setItem("ensu-lector-tam",Lector.tam);}catch(_){}
+  if(Lector.rend)Lector.rend.themes.fontSize(`${Lector.tam}%`);
+}
+function aplicarTemaLector(){
+  if(!Lector.rend)return;
+  const oscuro=document.documentElement.classList.contains("dark");
+  Lector.rend.themes.register("ensu",{
+    body:{background:oscuro?"#0E0E10":"#F7F4EF",color:oscuro?"#EDE8E1":"#1A1714",
+      "font-family":"Georgia, 'Cormorant Garamond', serif","line-height":"1.7","padding":"0 8px"},
+    "a":{color:oscuro?"#C4A97D":"#9C7F4C"},
+    "::selection":{background:"rgba(196,169,125,.35)"}
+  });
+  Lector.rend.themes.select("ensu");
+  Lector.rend.themes.fontSize(`${Lector.tam}%`);
+}
+function teclasLector(ev){
+  const k=ev.key;
+  if(k==="ArrowRight"||k==="PageDown"||k===" ")pasarPagina(1);
+  else if(k==="ArrowLeft"||k==="PageUp")pasarPagina(-1);
+  else if(k==="Escape")cerrarLector();
+}
+/* Guarda por dónde vas; el progreso solo sube, nunca baja */
+async function guardarPosicion(){
+  const e=visibles().find(x=>x.id===Lector.id);
+  if(!e||!Store.isAdmin())return;
+  const campos={};
+  if(Lector.cfi&&Lector.cfi!==e.ebookCfi)campos.ebookCfi=Lector.cfi;
+  if(Lector.pct>(e.progreso||0)){
+    campos.progreso=Lector.pct;
+    if(e.paginasTotal)campos.paginaActual=Math.round(Lector.pct/100*e.paginasTotal);
+    if(e.estado!=="leyendo"&&e.estado!=="terminado")campos.estado="leyendo";
+  }
+  if(!Object.keys(campos).length)return;
+  try{await Store.actualizarCampos(Lector.id,campos);}catch(_){}
+}
+async function cerrarLector(){
+  clearTimeout(Lector.guardando);
+  const antes=(visibles().find(x=>x.id===Lector.id)||{}).progreso||0;
+  await guardarPosicion();
+  const panel=$("lector-panel");
+  panel.classList.remove("open");
+  setTimeout(()=>{panel.classList.remove("abierto");$("lector-cont").innerHTML="";},250);
+  bloquearScroll(false);
+  if(Lector.rend){try{Lector.rend.destroy();}catch(_){}Lector.rend=null;Lector.libro=null;}
+  if(Lector.pct>antes)toast(`Progreso actualizado al ${Lector.pct}%.`);
+  renderVista();
+}
+
+/* ── Subir el archivo desde la ficha del libro ── */
+async function subirEbook(file){
+  if(!file)return;
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(!["epub","pdf"].includes(ext)){toast("Solo EPUB o PDF.","error");return;}
+  if(file.size>60*1024*1024){toast("El archivo supera los 60 MB.","error");return;}
+  toast("Subiendo el libro…");
+  try{
+    const datos=await Store.subirEbook(file,Lector.subiendoId,ext);
+    await Store.actualizarCampos(Lector.subiendoId,{ebookRuta:datos.ruta,ebookNombre:file.name,ebookTipo:ext,ebookCfi:""});
+    toast("Libro subido. Ya puedes leerlo.");
+    renderLeer();
+  }catch(err){toast(errSubida(err),"error");}
+  finally{$("ebook-file").value="";}
+}
+function elegirEbook(id){Lector.subiendoId=Number(id);$("ebook-file").click();}
+async function quitarEbook(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
+  if(!confirm(`¿Quitar el archivo de «${e.libro||titulo(e)}»? Tus notas y tu progreso se conservan.`))return;
+  try{
+    await Store.borrarEbook(e.ebookRuta);
+    await Store.actualizarCampos(e.id,{ebookRuta:"",ebookNombre:"",ebookTipo:"",ebookCfi:""});
+    toast("Archivo eliminado.");renderLeer();
+  }catch(err){toast(errSubida(err),"error");}
+}
+
 /* ══ MODO DE PRUEBA (solo en local, con ?demo=1) ══
    Añade reflexiones ficticias a la vista para comprobar cómo queda la ficha.
    No escribe nada en la base de datos ni se activa en la web publicada. */
@@ -1630,6 +1848,15 @@ const ACCIONES={
   "reto-quitar":()=>guardarReto(true),
   "cita-img":v=>abrirImgCita(v),
   "take-editar":v=>abrirTake(v),
+  "abrir-lector":v=>abrirLector(v),
+  "cerrar-lector":()=>cerrarLector(),
+  "lector-prev":()=>pasarPagina(-1),
+  "lector-next":()=>pasarPagina(1),
+  "lector-mas":()=>tamanoLector(10),
+  "lector-menos":()=>tamanoLector(-10),
+  "lector-saltar":v=>saltarA(v),
+  "subir-ebook":v=>elegirEbook(v),
+  "quitar-ebook":v=>quitarEbook(v),
   "take-subir":()=>$("take-file").click(),
   "take-quitar-img":()=>{recogerTake();Take.img="";pintarTake();},
   "take-generar":()=>generarTake(),
@@ -1689,6 +1916,8 @@ function initEventos(){
   $("citas-q").addEventListener("input",()=>{clearTimeout(tq);tq=setTimeout(renderCitas,140);});
   fEl("portada-file").addEventListener("change",e=>subirPortada(e.target.files[0]));
   $("take-file").addEventListener("change",e=>subirImagenTake(e.target.files[0]));
+  $("ebook-file").addEventListener("change",e=>subirEbook(e.target.files[0]));
+  document.addEventListener("keydown",e=>{if($("lector-panel").classList.contains("abierto"))teclasLector(e);});
   const zona=$("take-img");
   ["dragenter","dragover"].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.add("soltar");}));
   ["dragleave","drop"].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.remove("soltar");}));

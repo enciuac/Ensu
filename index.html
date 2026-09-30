@@ -81,6 +81,7 @@
       <a href="#/citas" class="nav-link" data-nav="citas">Citas</a>
       <a href="#/cronologia" class="nav-link" data-nav="cronologia">Cronología</a>
       <a href="#/estadisticas" class="nav-link" data-nav="estadisticas">Estadísticas</a>
+      <a href="#/lector" class="nav-link admin-only" data-nav="lector">Leer</a>
       <a href="#/tareas" class="nav-link admin-only" data-nav="tareas">Tareas</a>
     </div>
     <div class="nav-actions">
@@ -234,6 +235,18 @@
     </header>
     <div class="tareas-stats" id="tareas-stats"></div>
     <div class="kanban" id="kanban"></div>
+  </div>
+</section>
+
+<!-- ═══ LEER (ebooks) ═══ -->
+<section class="view" id="view-lector">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Solo autor</p>
+      <h1 class="page-title">Leer</h1>
+      <p class="page-sub" id="lector-sub"></p>
+    </header>
+    <div class="lec-grid" id="lector-grid"></div>
   </div>
 </section>
 
@@ -444,6 +457,27 @@
   </div>
 </div>
 
+<!-- ═══ PANEL: LECTOR ═══ -->
+<div class="lector-panel" id="lector-panel" role="dialog" aria-modal="true" aria-label="Lectura">
+  <nav class="lector-nav">
+    <button class="leer-back" data-act="cerrar-lector"><svg class="i"><use href="#i-arrow-l"/></svg>Volver</button>
+    <span class="lector-titulo" id="lector-titulo"></span>
+    <div class="lector-herr" id="lector-epub">
+      <button class="btn-icon" data-act="lector-menos" title="Letra más pequeña" aria-label="Letra más pequeña">A−</button>
+      <button class="btn-icon" data-act="lector-mas" title="Letra más grande" aria-label="Letra más grande">A+</button>
+    </div>
+  </nav>
+  <p class="lector-aviso" id="lector-aviso" hidden></p>
+  <div class="lector-cont" id="lector-cont"></div>
+  <div class="lector-pie" id="lector-pie">
+    <button class="btn-icon" data-act="lector-prev" aria-label="Página anterior"><svg class="i"><use href="#i-arrow-l"/></svg></button>
+    <div class="lector-progreso"><div class="lector-barra" id="lector-barra"></div></div>
+    <span class="lector-pct" id="lector-pct">0%</span>
+    <button class="btn-icon" data-act="lector-next" aria-label="Página siguiente"><svg class="i"><use href="#i-arrow-r"/></svg></button>
+  </div>
+</div>
+<input type="file" id="ebook-file" accept=".epub,.pdf,application/epub+zip,application/pdf" hidden>
+
 <!-- ═══ MODAL: TAKEAWAYS ═══ -->
 <div class="modal-overlay" id="take-overlay">
   <div class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="take-title">
@@ -561,6 +595,7 @@
       <button class="sheet-item" data-act="mas-ir" data-v="citas"><svg class="i"><use href="#i-quote"/></svg>Citas</button>
       <button class="sheet-item" data-act="mas-ir" data-v="resumen"><svg class="i"><use href="#i-sparkle"/></svg>Resumen del año</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="cronologia"><svg class="i"><use href="#i-clock"/></svg>Cronología</button>
+      <button class="sheet-item admin-only" data-act="mas-ir" data-v="lector"><svg class="i"><use href="#i-book"/></svg>Leer mis libros</button>
       <button class="sheet-item admin-only" data-act="mas-ir" data-v="tareas"><svg class="i"><use href="#i-tasks"/></svg>Mis tareas</button>
       <button class="sheet-item" data-act="tema"><span data-tema-ico></span><span data-tema-txt>Modo oscuro</span></button>
       <button class="sheet-item admin-only" data-act="copia"><svg class="i"><use href="#i-download"/></svg>Descargar copia de seguridad</button>
