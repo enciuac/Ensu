@@ -1651,7 +1651,7 @@ async function abrirLector(id){
   const e=visibles().find(x=>String(x.id)===String(id));
   if(!e||!e.ebookRuta)return;
   Lector.id=e.id;Lector.cfi=e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;
-  $("lector-marcas").hidden=true;cerrarSeleccion();
+  $("lector-marcas").hidden=true;Lector.pestana="indice";cerrarSeleccion();
   Lector.tam=Number(localStorage.getItem("ensu-lector-tam"))||100;
   $("lector-titulo").textContent=e.libro||titulo(e);
   $("lector-cont").innerHTML=`<p class="lector-cargando">Abriendo el libro…</p>`;
@@ -1719,7 +1719,8 @@ async function mostrarEpub(datos,e){
   rend.on("keyup",ev=>teclasLector(ev));
   rend.on("selected",cfiRange=>alSeleccionar(cfiRange));
   rend.on("markClicked",()=>abrirMarcas());
-  rend.on("relocated",()=>cerrarSeleccion());
+  libro.loaded.navigation.then(()=>{if(!$("lector-marcas").hidden&&Lector.pestana==="indice")listarIndice();}).catch(()=>{});
+  rend.on("relocated",()=>{cerrarSeleccion();marcarCapitulo();});
   pintarMarcas();
   // El porcentaje exacto necesita un índice; se calcula en segundo plano y se guarda en este navegador
   const clave=`ensu-locs-${e.ebookRuta}`;
@@ -1850,7 +1851,40 @@ async function guardarNotaMarca(){
   cerrarModal("nota-marca-overlay");
   await crearMarca("nota",nota);
 }
-function abrirMarcas(){$("lector-marcas").hidden=false;listarMarcas();}
+function abrirMarcas(){$("lector-marcas").hidden=false;cambiarPestana("marcas");recolocarLibro();}
+function cambiarPestana(cual){
+  Lector.pestana=cual;
+  $$(".lector-tab").forEach(b=>b.classList.toggle("activo",b.dataset.v===cual));
+  $("lector-indice-lista").hidden=cual!=="indice";
+  $("lector-marcas-lista").hidden=cual!=="marcas";
+  listarMarcas();                 // así el contador de la pestaña siempre está al día
+  if(cual==="indice")listarIndice();
+}
+/* El índice viene dentro del EPUB; si el libro no lo trae, no hay nada que mostrar */
+function listarIndice(){
+  const toc=(Lector.libro&&Lector.libro.navigation&&Lector.libro.navigation.toc)||[];
+  const fila=(it,nivel)=>`<button class="cap${nivel?" cap-sub":""}" data-act="ir-cap" data-v="${esc(it.href)}">${esc(it.label.trim()||"Sin título")}</button>`
+    +(it.subitems||[]).map(sub=>fila(sub,nivel+1)).join("");
+  $("lector-indice-lista").innerHTML=toc.length?toc.map(it=>fila(it,0)).join("")
+    :`<p class="form-hint" style="padding:16px">Este libro no trae índice.</p>`;
+  marcarCapitulo();
+}
+function marcarCapitulo(){
+  if(!Lector.rend)return;
+  let href="";
+  try{const l=Lector.rend.currentLocation();href=l&&l.start&&l.start.href||"";}catch(_){}
+  const caps=$$("#lector-indice-lista .cap");
+  caps.forEach(b=>b.classList.remove("activo"));
+  if(!href)return;
+  // Se señala solo la primera entrada del capítulo, no también sus apartados
+  const actual=caps.find(b=>{const h=(b.dataset.v||"").split("#")[0];return h===href||href.endsWith(h)||h.endsWith(href);});
+  if(actual)actual.classList.add("activo");
+}
+function irACapitulo(href){
+  if(!Lector.rend)return;
+  Lector.rend.display(href).then(marcarCapitulo).catch(()=>{});
+  if(window.innerWidth<900){$("lector-marcas").hidden=true;recolocarLibro();}
+}
 function listarMarcas(){
   const lista=marcasDe(Lector.id);
   const TIPO={subrayado:"Subrayado",nota:"Nota",marcador:"Marcador"};
@@ -2032,7 +2066,9 @@ const ACCIONES={
   "marca-copiar":()=>{const t=Lector.sel&&Lector.sel.texto;if(t)navigator.clipboard.writeText(t).then(()=>{toast("Texto copiado.");cerrarSeleccion();});},
   "marca-cerrar":()=>cerrarSeleccion(),
   "marcador":()=>crearMarca("marcador"),
-  "marcas-abrir":()=>{const p=$("lector-marcas");p.hidden=!p.hidden;if(!p.hidden)listarMarcas();recolocarLibro();},
+  "marcas-abrir":()=>{const p=$("lector-marcas");p.hidden=!p.hidden;if(!p.hidden)cambiarPestana(Lector.pestana||"indice");recolocarLibro();},
+  "lector-tab":v=>cambiarPestana(v),
+  "ir-cap":v=>irACapitulo(v),
   "marcas-cerrar":()=>{$("lector-marcas").hidden=true;recolocarLibro();},
   "marca-ir":v=>{irAMarca(v);if(window.innerWidth<900){$("lector-marcas").hidden=true;recolocarLibro();}},
   "marca-borrar":v=>borrarMarca(v),
