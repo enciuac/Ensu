@@ -3,7 +3,32 @@
 // Solo responde a quien tenga sesión de autor en Supabase.
 const SUPABASE_URL = "https://wgtolhgtdpxasliaaxaa.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Ze4N3Wl2SyqnBmEtRlcO-A_M1drZqmX";
-const MODELOS = [process.env.GEMINI_MODEL, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"].filter(Boolean);
+const MODELOS_RESPALDO = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"];
+let modelosCache = null;
+
+// Pregunta a Google qué modelos hay y se queda con el Flash más nuevo.
+// Así no depende de una lista escrita a mano que envejece.
+async function modelosDisponibles() {
+  if (modelosCache) return modelosCache;
+  const fijo = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : [];
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+      headers: { "x-goog-api-key": process.env.GEMINI_API_KEY }
+    });
+    if (!r.ok) throw new Error("lista " + r.status);
+    const nombres = ((await r.json()).models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => String(m.name || "").replace(/^models\//, ""))
+      .filter(n => /flash/i.test(n) && !/(embedding|tts|image|audio|live|native)/i.test(n));
+    const version = n => { const m = n.match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; };
+    const penaliza = n => (/preview|exp|thinking|lite/i.test(n) ? 1 : 0);
+    nombres.sort((a, b) => penaliza(a) - penaliza(b) || version(b) - version(a) || a.length - b.length);
+    modelosCache = [...fijo, ...nombres, ...MODELOS_RESPALDO];
+  } catch (_) {
+    modelosCache = [...fijo, ...MODELOS_RESPALDO];
+  }
+  return modelosCache;
+}
 const ORIGENES = ["https://ensu-eight.vercel.app", "http://localhost:8080", "http://127.0.0.1:8080"];
 
 const INSTRUCCIONES = `Eres un lector atento. Esta imagen es un resumen visual ("takeaways") de un libro.
@@ -29,6 +54,12 @@ module.exports = async (req, res) => {
     res.setHeader("Access-Control-Allow-Headers", "content-type, authorization");
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     return res.status(204).end();
+  }
+  // Diagnóstico: qué modelos ve la función (no consume cuota de generación)
+  if (req.method === "GET") {
+    if (!process.env.GEMINI_API_KEY) return json(res, 500, { error: "Falta la clave GEMINI_API_KEY en Vercel." }, origen);
+    const lista = await modelosDisponibles();
+    return json(res, 200, { usara: lista[0], candidatos: lista.slice(0, 8) }, origen);
   }
   if (req.method !== "POST") return json(res, 405, { error: "Método no permitido" }, origen);
   if (!process.env.GEMINI_API_KEY) return json(res, 500, { error: "Falta la clave GEMINI_API_KEY en Vercel." }, origen);
@@ -62,7 +93,7 @@ module.exports = async (req, res) => {
     };
 
     let ultimo = "";
-    for (const modelo of MODELOS) {
+    for (const modelo of await modelosDisponibles()) {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
