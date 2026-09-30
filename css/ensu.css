@@ -481,6 +481,8 @@ input[type="range"]:disabled{opacity:.45;pointer-events:none}
 .private-notes label{color:var(--accent-dk);display:flex;align-items:center;gap:6px}
 .cover-preview{display:flex;gap:14px;align-items:center}
 .cover-preview .cover{width:54px}
+a.btn-cancel,a.btn-save,a.btn-del,a.chip-btn,a.btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
+.foto-modal .modal-foot{justify-content:center}
 .btn-cancel{height:40px;padding:0 18px;border-radius:100px;font-size:13px;font-weight:500;color:var(--text2);border:1.5px solid var(--borde);transition:all var(--tr)}
 .btn-cancel:hover{border-color:var(--text);color:var(--text)}
 .btn-save{height:40px;padding:0 22px;border-radius:100px;font-size:13px;font-weight:600;color:var(--bg);background:var(--text);transition:opacity var(--tr);display:inline-flex;align-items:center;gap:8px}
