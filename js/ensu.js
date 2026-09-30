@@ -235,7 +235,10 @@ const Store=(()=>{
   /* Libros: almacén privado, sin comprimir, y enlaces temporales para leerlos */
   async function subirEbook(file,id,ext){
     const ruta=`e${id||"x"}-${Date.now()}.${ext}`;
-    ok(await sb.storage.from("ebooks").upload(ruta,file,{contentType:ext==="pdf"?"application/pdf":"application/epub+zip",upsert:false}));
+    const tipo=ext==="pdf"?"application/pdf":"application/epub+zip";
+    // Windows etiqueta los .epub como "application/epub"; se reenvía con el tipo correcto
+    const cuerpo=file.type===tipo?file:new Blob([file],{type:tipo});
+    ok(await sb.storage.from("ebooks").upload(ruta,cuerpo,{contentType:tipo,upsert:false}));
     return{ruta};
   }
   const borrarEbook=ruta=>ruta?sb.storage.from("ebooks").remove([ruta]).then(({error})=>{if(error)throw error;}):Promise.resolve();
@@ -1509,6 +1512,7 @@ function errSubida(err){
   if(/row-level security|403|Unauthorized/i.test(t))return"Supabase no permite la subida: faltan los permisos del bucket. Ejecuta supabase/08_permisos_imagenes.sql.";
   if(/Bucket not found|404/i.test(t))return"No existe el bucket de imágenes. Ejecuta supabase/07_takeaways.sql.";
   if(/exceeded|too large|413/i.test(t))return"La imagen pesa demasiado. Usa una más pequeña.";
+  if(/mime type|not supported/i.test(t))return"Supabase rechaza el tipo de archivo. Ejecuta supabase/10_tipos_ebook.sql.";
   if(/JWT|expired|session/i.test(t))return"Tu sesión ha caducado. Vuelve a entrar.";
   if(/fetch|network/i.test(t))return"Sin conexión con Supabase.";
   return"No se pudo subir la imagen: "+(err&&err.message?err.message:"error desconocido");
