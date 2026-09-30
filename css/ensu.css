@@ -873,6 +873,30 @@ html.dark .lec-descarga{color:var(--accent)}
 .cap-res{font-family:var(--serif);font-size:14px;color:var(--text2)}
 .cap-res mark{background:rgba(196,169,125,.4);color:inherit;border-radius:3px;padding:0 1px}
 /* Subrayados en la ficha del libro */
+/* ── La hoja imprimible ──
+   No se ve nunca en pantalla; al imprimir es lo único que queda. Los colores
+   van escritos a pelo, no con variables, para que salga en claro aunque estés
+   con el tema oscuro puesto. */
+#imprimible{display:none}
+@media print{
+  @page{margin:16mm 14mm}
+  html,body{background:#fff!important;height:auto!important;overflow:visible!important}
+  body>*{display:none!important}
+  body>#imprimible{display:block!important}
+  #imprimible{color:#1A1714;font-family:'Inter',system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .imp-cab{display:flex;gap:22px;align-items:flex-end;padding-bottom:20px;border-bottom:1.5px solid #C4A97D;margin-bottom:30px}
+  .imp-portada{width:96px;height:auto;border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .imp-cab-txt{min-width:0}
+  .imp-eyebrow{font-size:9pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9C7F4C;margin:0 0 8px}
+  .imp-titulo{font-family:'Cormorant Garamond',Georgia,serif;font-size:27pt;line-height:1.1;font-weight:500;margin:0}
+  .imp-autor{font-size:11pt;color:#5C5650;margin:6px 0 0}
+  .imp-meta{font-size:9pt;color:#8E8882;margin:10px 0 0}
+  .imp-marca{break-inside:avoid;page-break-inside:avoid;margin-bottom:22px;padding-left:16px;border-left:2px solid #E6E1DA}
+  .imp-tipo{font-size:8pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9C7F4C;margin:0 0 6px}
+  .imp-cita{font-family:'Cormorant Garamond',Georgia,serif;font-size:14pt;line-height:1.45;font-style:italic;margin:0}
+  .imp-nota{font-size:10pt;line-height:1.55;color:#5C5650;margin:9px 0 0;padding-left:14px;border-left:2px solid #C4A97D}
+  .imp-pie{margin-top:26px;padding-top:12px;border-top:1px solid #E6E1DA;font-size:8.5pt;color:#8E8882;text-align:center}
+}
 /* Completar con IA: lo que ha puesto la máquina se ve de un vistazo */
 .sugerir-caja{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 #libro-form .sugerido{border-color:var(--accent);background:rgba(196,169,125,.12)}

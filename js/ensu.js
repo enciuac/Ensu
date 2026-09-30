@@ -814,7 +814,7 @@ function renderLeer(scrollTop){
     </button>`).join("")}${hijas.length>3?`<button class="hijas-mas" data-act="hijas-mas">${verTodas?"Ver menos":`Ver las ${hijas.length}`}</button>`:""}</div>`);
   if(admin&&esLibro&&(e.estado==="leyendo"||puntosDe(e).length>=2))body+=sec("Tu ritmo de lectura",ritmoHTML(e));
   const mias=admin?Store.marcas().filter(m=>m.entradaId===e.id):[];
-  if(mias.length)body+=sec(`Subrayados y notas (${mias.length}) <button class="chip-btn" data-act="exportar-marcas" data-v="${e.id}">${icon("i-download","sm")} Exportar</button>`,marcasFichaHTML(e,mias));
+  if(mias.length)body+=sec(`Subrayados y notas (${mias.length}) <button class="chip-btn" data-act="pdf-marcas" data-v="${e.id}">${icon("i-doc","sm")} PDF</button> <button class="chip-btn" data-act="exportar-marcas" data-v="${e.id}">${icon("i-download","sm")} Markdown</button>`,marcasFichaHTML(e,mias));
   if(admin&&e.notas)body+=sec("Notas privadas",`<div class="leer-notas">${esc(e.notas)}</div>`);
   if(!e.reflexion&&!e.vida&&!e.tension&&!e.cita)body+=`<p class="form-hint" style="margin-top:28px">Todavía no hay notas sobre esta lectura.</p>`;
   const ficha=[
@@ -2033,6 +2033,44 @@ function irMarcaLibro(v){
   if(i<0)return;
   abrirLector(String(v).slice(0,i),String(v).slice(i+1));
 }
+/* 6b · El mismo material, pero para leerlo o guardarlo: una hoja maquetada
+   que el navegador convierte en PDF con «Guardar como PDF». Se hace así y no
+   con una librería para que pese cero y funcione igual en el móvil. */
+async function pdfMarcas(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
+  const lista=Store.marcas().filter(m=>m.entradaId===e.id);
+  if(!lista.length){toast("Todavía no hay nada subrayado.");return;}
+  const cuenta=t=>lista.filter(m=>m.tipo===t).length;
+  const resumen=[[cuenta("subrayado"),"subrayado","subrayados"],[cuenta("nota"),"nota","notas"],[cuenta("marcador"),"marcador","marcadores"]]
+    .filter(x=>x[0]).map(([c,s,p])=>`${c} ${c===1?s:p}`).join("  ·  ");
+  const portada=e.tipo==="libro"?Portadas.url(e,"L"):"";
+  const hoja=$("imprimible");
+  hoja.innerHTML=`
+    <header class="imp-cab">
+      ${portada?`<img class="imp-portada" src="${esc(portada)}" alt="" onerror="this.remove()">`:""}
+      <div class="imp-cab-txt">
+        <p class="imp-eyebrow">Subrayados y notas</p>
+        <h1 class="imp-titulo">${esc(titulo(e))}</h1>
+        ${e.autor?`<p class="imp-autor">${esc(e.autor)}</p>`:""}
+        <p class="imp-meta">${esc(resumen)}</p>
+      </div>
+    </header>
+    <div class="imp-cuerpo">${lista.map(m=>`
+      <article class="imp-marca">
+        <p class="imp-tipo">${TIPO_MARCA[m.tipo]||"Marca"}</p>
+        ${m.texto?`<blockquote class="imp-cita">${esc(m.texto)}</blockquote>`:""}
+        ${m.nota?`<p class="imp-nota">${esc(m.nota)}</p>`:""}
+      </article>`).join("")}</div>
+    <footer class="imp-pie">EnSu · Lo que leo me forma · ${new Date().getFullYear()}</footer>`;
+  // Sin esperar a la portada saldría un hueco en blanco en la primera página
+  const img=hoja.querySelector("img");
+  if(img&&!img.complete)await new Promise(r=>{img.onload=img.onerror=r;setTimeout(r,3500);});
+  const antes=document.title;
+  document.title=`${titulo(e)} — subrayados`;   // el navegador lo usa de nombre del PDF
+  window.print();
+  setTimeout(()=>{document.title=antes;hoja.innerHTML="";},1200);
+}
+
 /* 6 · Llevarse los subrayados a donde tomes notas */
 function exportarMarcas(id){
   const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
@@ -2369,6 +2407,7 @@ const ACCIONES={
   "marca-ir":v=>{irAMarca(v);if(window.innerWidth<900){$("lector-marcas").hidden=true;recolocarLibro();}},
   "marca-borrar":v=>borrarMarca(v),
   "exportar-marcas":v=>exportarMarcas(v),
+  "pdf-marcas":v=>pdfMarcas(v),
   "ir-marca-libro":v=>irMarcaLibro(v),
   "subir-ebook":v=>elegirEbook(v),
   "quitar-ebook":v=>quitarEbook(v),
