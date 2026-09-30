@@ -76,6 +76,8 @@ module.exports = async (req, res) => {
     if (!subida.ok) {
       const t = await subida.text().catch(() => "");
       if (/Bucket not found/i.test(t)) return json(res, 500, { error: "Falta ejecutar supabase/13_portadas.sql." }, origen);
+      // El almacén puede tener una lista blanca de formatos más estrecha que la nuestra
+      if (/mime type/i.test(t)) return json(res, 500, { error: `El almacén de portadas no admite ${mime}. Ejecuta supabase/13_portadas.sql.` }, origen);
       return json(res, 502, { error: `No se pudo guardar la portada (${subida.status}).` }, origen);
     }
   } catch (err) {

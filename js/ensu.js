@@ -1512,8 +1512,31 @@ function traerPortadaEnSilencio(e){
   if(!Store.isAdmin()||!portadaPrestada(e)||!e.id)return;
   traerPortada(e.id,e.portada).catch(err=>console.warn("EnSu portada:",err&&err.message));
 }
+/* Sin que tengas que pedirlo: al entrar como autor se van copiando las que
+   falten, de una en una y despacio, para no cargar la página. Nunca borra
+   nada; si un enlace está roto lo deja como está y te lo dirá el botón de
+   «Guardar portadas en mi almacén». */
+let rescateHecho=false,rescateEnCurso=false;
+async function rescatarPortadas(){
+  if(rescateHecho||rescateEnCurso||!Store.isAdmin()||!Store.cargado())return;
+  const lista=visibles().filter(portadaPrestada);
+  if(!lista.length){rescateHecho=true;return;}
+  rescateEnCurso=true;
+  let ok=0,fallos=0;
+  for(const e of lista){
+    try{await traerPortada(e.id,e.portada);ok++;}
+    catch(err){fallos++;console.warn(`EnSu · portada de «${titulo(e)}»: ${(err&&err.message)||"error"}`);}
+    await new Promise(r=>setTimeout(r,400));
+  }
+  rescateEnCurso=false;rescateHecho=true;
+  if(ok)toast(ok===1?"Una portada guardada en tu almacén.":`${ok} portadas guardadas en tu almacén.`);
+  if(fallos)toast(`${fallos} ${fallos===1?"portada no se pudo copiar":"portadas no se pudieron copiar"}. Míralas en Más → Guardar portadas.`,"error");
+}
+
 /* Todas de golpe, con parte de lo que ha salido bien y lo que no */
 async function guardarPortadas(){
+  if(rescateEnCurso){toast("Ya se están copiando; espera un momento.");return;}
+  rescateHecho=true;   // manda lo que pidas tú, no el automático
   const lista=visibles().filter(portadaPrestada);
   if(!lista.length){toast("Todas tus portadas ya están en tu almacén.");return;}
   if(!confirm(`Se van a copiar ${lista.length} ${lista.length===1?"portada":"portadas"} a tu almacén de Supabase.\n\nAsí dejan de depender de webs de terceros. ¿Seguimos?`))return;
@@ -2401,6 +2424,8 @@ function init(){
   Store.onChange(()=>{
     renderVista();
     if(App.leerId!=null)renderLeer(false);
+    // Un respiro para que la web termine de pintarse antes de tocar la red
+    if(Store.isAdmin()&&Store.cargado()&&!rescateHecho)setTimeout(rescatarPortadas,2500);
   });
   // Modo de prueba: solo en local y con ?demo=1. Añade reflexiones ficticias a la
   // vista para comprobar cómo queda; no toca la base de datos.
