@@ -65,6 +65,8 @@
   <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-marcador" viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
 </svg>
 
@@ -465,10 +467,30 @@
     <div class="lector-herr" id="lector-epub">
       <button class="btn-icon" data-act="lector-menos" title="Letra más pequeña" aria-label="Letra más pequeña">A−</button>
       <button class="btn-icon" data-act="lector-mas" title="Letra más grande" aria-label="Letra más grande">A+</button>
+      <button class="btn-icon" data-act="marcador" title="Marcar esta página" aria-label="Marcar esta página"><svg class="i sm"><use href="#i-marcador"/></svg></button>
+      <button class="btn-icon" data-act="marcas-abrir" title="Mis marcas" aria-label="Mis marcas"><svg class="i sm"><use href="#i-lista"/></svg></button>
     </div>
   </nav>
   <p class="lector-aviso" id="lector-aviso" hidden></p>
-  <div class="lector-cont" id="lector-cont"></div>
+  <div class="lector-zona">
+    <div class="lector-cont" id="lector-cont"></div>
+    <aside class="lector-marcas" id="lector-marcas" hidden>
+      <div class="lector-marcas-top">
+        <b>Mis marcas <span id="lector-marcas-n"></span></b>
+        <button class="btn-icon" data-act="marcas-cerrar" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="lector-marcas-lista" id="lector-marcas-lista"></div>
+    </aside>
+  </div>
+  <div class="lector-sel" id="lector-sel" hidden>
+    <p class="lector-sel-txt" id="lector-sel-txt"></p>
+    <div class="lector-sel-acts">
+      <button class="chip-btn" data-act="marca-subrayar"><svg class="i sm"><use href="#i-pen"/></svg>Subrayar</button>
+      <button class="chip-btn" data-act="marca-nota"><svg class="i sm"><use href="#i-edit"/></svg>Nota</button>
+      <button class="chip-btn" data-act="marca-copiar"><svg class="i sm"><use href="#i-doc"/></svg>Copiar</button>
+      <button class="btn-icon" data-act="marca-cerrar" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
   <div class="lector-pie" id="lector-pie">
     <button class="btn-icon" data-act="lector-prev" aria-label="Página anterior"><svg class="i"><use href="#i-arrow-l"/></svg></button>
     <div class="lector-progreso"><div class="lector-barra" id="lector-barra"></div></div>
@@ -477,6 +499,20 @@
   </div>
 </div>
 <input type="file" id="ebook-file" accept=".epub,.pdf,application/epub+zip,application/pdf" hidden>
+
+<!-- ═══ MODAL: NOTA SOBRE LO SUBRAYADO ═══ -->
+<div class="modal-overlay" id="nota-marca-overlay">
+  <div class="modal sheet-modal" role="dialog" aria-modal="true" aria-labelledby="nota-marca-t">
+    <button class="modal-close" data-act="cerrar" data-v="nota-marca-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-bar"></div>
+    <div class="modal-head"><p class="eyebrow">Anotar</p><h2 class="modal-title" id="nota-marca-t" style="margin-top:6px">Tu nota</h2></div>
+    <div class="modal-body">
+      <p class="nota-marca-sel" id="nota-marca-sel"></p>
+      <div class="form-g"><label for="nota-marca-txt">¿Qué te sugiere?</label><textarea id="nota-marca-txt" rows="4" placeholder="Lo que piensas al leer esto…"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="nota-marca-overlay">Cancelar</button><button class="btn-save" data-act="marca-guardar-nota">Guardar nota</button></div>
+  </div>
+</div>
 
 <!-- ═══ MODAL: TAKEAWAYS ═══ -->
 <div class="modal-overlay" id="take-overlay">
