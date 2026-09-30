@@ -1283,7 +1283,7 @@ async function subirPortada(file){
     const url=await Store.subirPortada(blob,Form.id);
     fEl("portada").value=url;fEl("portadaId").value="";
     actualizarPreviewPortada();toast("Portada subida. Guarda la entrada para aplicarla.");
-  }catch(err){toast(/bucket|not found|policy|403|42501/i.test(`${err&&err.message} ${err&&err.statusCode}`)?"Falta ejecutar supabase/03_mejoras.sql para poder subir portadas.":"No se pudo subir la imagen.","error");}
+  }catch(err){toast(errSubida(err),"error");}
   finally{prev.style.opacity="";fEl("portada-file").value="";}
 }
 
@@ -1449,6 +1449,15 @@ function recogerTake(){
   Take.idea=$("take-idea").value.trim();
   Take.frase=$("take-frase").value.trim();
 }
+function errSubida(err){
+  const t=`${err&&err.message} ${err&&err.statusCode} ${err&&err.name}`;
+  if(/row-level security|403|Unauthorized/i.test(t))return"Supabase no permite la subida: faltan los permisos del bucket. Ejecuta supabase/08_permisos_imagenes.sql.";
+  if(/Bucket not found|404/i.test(t))return"No existe el bucket de imágenes. Ejecuta supabase/07_takeaways.sql.";
+  if(/exceeded|too large|413/i.test(t))return"La imagen pesa demasiado. Usa una más pequeña.";
+  if(/JWT|expired|session/i.test(t))return"Tu sesión ha caducado. Vuelve a entrar.";
+  if(/fetch|network/i.test(t))return"Sin conexión con Supabase.";
+  return"No se pudo subir la imagen: "+(err&&err.message?err.message:"error desconocido");
+}
 async function subirImagenTake(file){
   if(!file)return;
   if(!/^image\//.test(file.type)){toast("Elige una imagen.","error");return;}
@@ -1458,7 +1467,7 @@ async function subirImagenTake(file){
     const blob=await comprimirImagen(file,1800);
     Take.img=await Store.subirArchivo("takeaways",blob,Take.id);
     pintarTake();toast("Imagen subida.");
-  }catch(err){toast(/bucket|not found|policy|403|42501/i.test(`${err&&err.message} ${err&&err.statusCode}`)?"Falta ejecutar supabase/07_takeaways.sql.":"No se pudo subir la imagen.","error");}
+  }catch(err){toast(errSubida(err),"error");}
   finally{$("take-img").classList.remove("cargando");$("take-file").value="";}
 }
 async function generarTake(){
@@ -1637,6 +1646,16 @@ function initEventos(){
   $("citas-q").addEventListener("input",()=>{clearTimeout(tq);tq=setTimeout(renderCitas,140);});
   fEl("portada-file").addEventListener("change",e=>subirPortada(e.target.files[0]));
   $("take-file").addEventListener("change",e=>subirImagenTake(e.target.files[0]));
+  const zona=$("take-img");
+  ["dragenter","dragover"].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.add("soltar");}));
+  ["dragleave","drop"].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.remove("soltar");}));
+  zona.addEventListener("drop",e=>{const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)subirImagenTake(f);});
+  zona.addEventListener("click",e=>{if(!e.target.closest("[data-act]"))$("take-file").click();});
+  document.addEventListener("paste",e=>{
+    if(!$("take-overlay").classList.contains("open"))return;
+    const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(x=>x.type.startsWith("image/"));
+    if(it){e.preventDefault();subirImagenTake(it.getAsFile());}
+  });
   $("buscar-q").addEventListener("input",()=>{Buscar.sel=0;renderBuscar();});
   $("buscar-q").addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"){e.preventDefault();moverBuscar(1);}
