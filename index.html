@@ -441,6 +441,37 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: TAKEAWAYS ═══ -->
+<div class="modal-overlay" id="take-overlay">
+  <div class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="take-title">
+    <button class="modal-close" data-act="cerrar" data-v="take-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <div class="modal-bar"></div>
+    <div class="modal-head"><p class="eyebrow">Lo que me llevo</p><h2 class="modal-title" id="take-title" style="margin-top:6px"></h2><p class="modal-sub">Sube la imagen y la IA la pasa a texto. Revísalo antes de guardar.</p></div>
+    <div class="modal-body">
+      <div class="take-img-zona" id="take-img"></div>
+      <div class="take-acciones">
+        <button type="button" class="chip-btn" id="take-subir" data-act="take-subir"><svg class="i sm"><use href="#i-upload"/></svg>Subir imagen</button>
+        <button type="button" class="btn-sm" id="take-generar" data-act="take-generar"><span class="spin"></span>Generar texto con IA</button>
+        <input type="file" id="take-file" accept="image/*" hidden>
+      </div>
+      <div id="take-lista" class="take-filas"></div>
+      <button type="button" class="btn-link" data-act="take-anadir">+ Añadir punto</button>
+      <div class="form-g" style="margin-top:16px"><label for="take-idea">La gran idea del libro</label><textarea id="take-idea" rows="2" placeholder="La conclusión que lo resume todo…"></textarea></div>
+      <div class="form-g"><label for="take-frase">Frase de cierre <small>(opcional)</small></label><textarea id="take-frase" rows="2"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" data-act="cerrar" data-v="take-overlay">Cancelar</button><button class="btn-save" id="take-guardar" data-act="take-guardar"><span class="spin"></span>Guardar takeaways</button></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: IMAGEN AMPLIADA ═══ -->
+<div class="modal-overlay" id="foto-overlay">
+  <div class="modal foto-modal" role="dialog" aria-modal="true" aria-label="Imagen">
+    <button class="modal-close" data-act="cerrar" data-v="foto-overlay" aria-label="Cerrar"><svg class="i sm"><use href="#i-x"/></svg></button>
+    <img id="foto-img" alt="Resumen visual">
+    <div class="modal-foot"><a class="btn-cancel" id="foto-abrir" target="_blank" rel="noopener">Abrir original</a></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: BUSCADOR GENERAL ═══ -->
 <div class="modal-overlay" id="buscar-overlay">
   <div class="modal buscar-modal" role="dialog" aria-modal="true" aria-label="Buscar">

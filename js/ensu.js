@@ -101,12 +101,15 @@ const Store=(()=>{
       paginaActual:r.pagina_actual==null?null:numOr(r.pagina_actual,null),
       orden:r.orden||null,portada:r.portada||"",portadaId:numOr(r.portada_id,0),
       entradaPadre:r.entrada_padre?Number(r.entrada_padre):null,
+      takeaways:Array.isArray(r.takeaways)?r.takeaways.map(t=>({titulo:String((t&&t.titulo)||""),texto:String((t&&t.texto)||"")})):[],
+      takeawayIdea:r.takeaway_idea||"",takeawayFrase:r.takeaway_frase||"",takeawayImg:r.takeaway_img||"",
       terminadoEn:r.terminado_en||""
     };
     return n;
   }
   /* App → base de datos. Solo incluye los campos presentes. */
-  const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id",terminadoEn:"terminado_en",entradaPadre:"entrada_padre"};
+  const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id",terminadoEn:"terminado_en",entradaPadre:"entrada_padre",
+    takeaways:"takeaways",takeawayIdea:"takeaway_idea",takeawayFrase:"takeaway_frase",takeawayImg:"takeaway_img"};
   function aDb(o){
     const r={};
     for(const[k,col]of Object.entries(MAPA)){
@@ -114,6 +117,7 @@ const Store=(()=>{
       let v=o[k];
       if(k==="fecha"||k==="terminadoEn")v=/^\d{4}-\d{2}-\d{2}$/.test(v||"")?v:null;
       else if(k==="tags")v=Array.isArray(v)?v:[];
+      else if(k==="takeaways")v=Array.isArray(v)?v:[];
       else if(["puntuacion","paginasTotal","paginaActual","orden","entradaPadre"].includes(k))v=v==null||v===""||!Number.isFinite(Number(v))?null:Math.round(Number(v));
       else if(k==="progreso"||k==="portadaId")v=Math.round(numOr(v,0));
       else v=v==null?"":String(v);
@@ -219,12 +223,15 @@ const Store=(()=>{
   async function login(email,pwd){const{error}=await sb.auth.signInWithPassword({email,password:pwd});if(error)throw error;const{data}=await sb.auth.getSession();if(!(await comprobarAutor(data.session))){await sb.auth.signOut();const e=new Error("no-autor");e.code="no-autor";throw e;}}
   async function logout(){await sb.auth.signOut();await comprobarAutor(null);try{if(window.caches)await caches.delete("ensu-datos");}catch(_){}}
   async function guardarAjuste(clave,valor){ok(await sb.from("ajustes").upsert({clave,valor}));await cargarAjustes();}
-  /* Sube una imagen (ya comprimida) al bucket "portadas" y devuelve su URL pública. */
-  async function subirPortada(blob,id){
+  /* Sube una imagen (ya comprimida) a un bucket y devuelve su URL pública. */
+  async function subirArchivo(bucket,blob,id){
     const ruta=`e${id||"nueva"}-${Date.now()}.jpg`;
-    ok(await sb.storage.from("portadas").upload(ruta,blob,{contentType:"image/jpeg",upsert:false,cacheControl:"31536000"}));
-    return sb.storage.from("portadas").getPublicUrl(ruta).data.publicUrl;
+    ok(await sb.storage.from(bucket).upload(ruta,blob,{contentType:"image/jpeg",upsert:false,cacheControl:"31536000"}));
+    return sb.storage.from(bucket).getPublicUrl(ruta).data.publicUrl;
   }
+  const subirPortada=(blob,id)=>subirArchivo("portadas",blob,id);
+  /* Token de la sesión: lo necesita la función de IA para comprobar quién eres */
+  async function token(){const{data}=await sb.auth.getSession();return(data&&data.session&&data.session.access_token)||"";}
   async function resetPassword(email){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;}
   async function nuevaPassword(pwd){const{error}=await sb.auth.updateUser({password:pwd});if(error)throw error;}
   function copia(){return{exportado:new Date().toISOString(),origen:"supabase",entradas:entradasDb,notas,tareas,ajustes,historial};}
@@ -232,7 +239,7 @@ const Store=(()=>{
   return{init,entradas,guardarEntrada,actualizarCampos,eliminarEntrada,
     tareas:()=>tareas,guardarTarea,eliminarTarea,actualizarTarea,
     login,logout,resetPassword,nuevaPassword,copia,
-    ajustes:()=>ajustes,guardarAjuste,historial:()=>historial,subirPortada,
+    ajustes:()=>ajustes,guardarAjuste,historial:()=>historial,subirPortada,subirArchivo,token,
     isAdmin:()=>admin,cargado:()=>cargado,errorCarga:()=>errorCarga,
     onChange:f=>subs.add(f),onAuth:f=>authSubs.add(f)};
 })();
@@ -716,6 +723,9 @@ function renderLeer(scrollTop){
   const sec=(lbl,html)=>`<section class="leer-seccion"><p class="leer-sec-lbl">${lbl}</p>${html}</section>`;
   let body="";
   if(e.tipo!=="reflexion"&&e.tituloRef)body+=`<p class="leer-frase">${esc(e.tituloRef)}</p>`;
+  const take=takeawaysHTML(e);
+  if(take||(admin&&esLibro))body+=sec("Takeaways"+(admin?` <button class="chip-btn take-editar" data-act="take-editar" data-v="${e.id}">${icon("i-edit","sm")} ${take?"Editar":"Añadir"}</button>`:""),
+    take||`<p class="form-hint">Sube la imagen con los takeaways del libro y la IA la pasa a texto.</p>`);
   if(e.reflexion)body+=sec(e.tipo==="articulo"?"Teoría":"Resumen",`<div class="leer-rich">${txRich(e.reflexion)}</div>`);
   if(e.cita)body+=`<figure class="leer-cita"><span class="leer-cita-mark">“</span><blockquote class="leer-cita-txt">${esc(e.cita)}</blockquote><button class="chip-btn leer-cita-btn" data-act="cita-img" data-v="${e.id}">${icon("i-image","sm")} Compartir como imagen</button></figure>`;
   if(e.tension)body+=sec("Notas de lectura",`<div class="leer-rich">${txRich(e.tension)}</div>`);
@@ -1382,6 +1392,108 @@ async function guardarFin(){
   finally{btn.disabled=false;}
 }
 
+/* ══ TAKEAWAYS ══
+   Lo que te llevas de un libro: una lista corta, la gran idea y, si la tienes,
+   la imagen original. La IA (Gemini, a través de una función en Vercel) solo
+   sirve para pasar la imagen a texto; siempre lo revisas antes de guardar. */
+const API_IA=()=>esLocal()?"https://ensu-eight.vercel.app/api/takeaway":"/api/takeaway";
+const Take={id:null,img:"",lista:[],idea:"",frase:"",generando:false};
+
+function takeawaysHTML(e){
+  const n=e.takeaways.length;
+  if(!n&&!e.takeawayIdea&&!e.takeawayImg)return"";
+  let h=n?`<ol class="take-lista">${e.takeaways.map(t=>`<li class="take-item">
+      ${t.titulo?`<p class="take-t">${esc(t.titulo)}</p>`:""}
+      ${t.texto?`<p class="take-x">${esc(t.texto)}</p>`:""}
+    </li>`).join("")}</ol>`:"";
+  if(e.takeawayIdea)h+=`<div class="take-idea"><p class="eyebrow">La gran idea</p><p>${esc(e.takeawayIdea)}</p></div>`;
+  if(e.takeawayFrase)h+=`<p class="take-frase">${esc(e.takeawayFrase)}</p>`;
+  if(e.takeawayImg)h+=`<button class="take-img" data-act="foto" data-v="${esc(e.takeawayImg)}"><img src="${esc(e.takeawayImg)}" alt="Resumen visual de ${esc(e.libro||titulo(e))}" loading="lazy"><span>${icon("i-image","sm")} Ver el resumen visual completo</span></button>`;
+  return h;
+}
+
+/* ── Editor ── */
+function abrirTake(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
+  Take.id=e.id;Take.img=e.takeawayImg;Take.lista=e.takeaways.map(t=>({...t}));
+  Take.idea=e.takeawayIdea;Take.frase=e.takeawayFrase;Take.generando=false;
+  $("take-title").textContent=e.libro||titulo(e);
+  pintarTake();
+  abrirModal("take-overlay");
+}
+function pintarTake(){
+  $("take-img").innerHTML=Take.img
+    ?`<img src="${esc(Take.img)}" alt="Imagen de takeaways"><button class="btn-icon peligro" data-act="take-quitar-img" title="Quitar imagen" aria-label="Quitar imagen">${icon("i-trash","sm")}</button>`
+    :`<div class="take-img-vacio">${icon("i-image")}<span>Sube la imagen con los takeaways</span></div>`;
+  $("take-subir").textContent=Take.img?"Cambiar imagen":"Subir imagen";
+  const btn=$("take-generar");
+  btn.disabled=!Take.img||Take.generando;
+  btn.classList.toggle("cargando",Take.generando);
+  btn.innerHTML=`<span class="spin"></span>${Take.generando?"Leyendo la imagen…":"Generar texto con IA"}`;
+  $("take-lista").innerHTML=Take.lista.map((t,i)=>`<div class="take-fila">
+      <span class="take-num">${i+1}</span>
+      <div class="take-campos">
+        <input type="text" data-take="titulo" data-i="${i}" value="${esc(t.titulo)}" placeholder="Título del punto">
+        <textarea rows="2" data-take="texto" data-i="${i}" placeholder="Explicación">${esc(t.texto)}</textarea>
+      </div>
+      <button class="btn-icon peligro" data-act="take-borrar" data-v="${i}" title="Quitar" aria-label="Quitar">${icon("i-trash","sm")}</button>
+    </div>`).join("")||`<p class="form-hint">Sin puntos todavía. Genéralos con la IA o añádelos a mano.</p>`;
+  $("take-idea").value=Take.idea;
+  $("take-frase").value=Take.frase;
+}
+function recogerTake(){
+  $("#take-lista [data-take]").forEach(el=>{
+    const i=Number(el.dataset.i);
+    if(Take.lista[i])Take.lista[i][el.dataset.take]=el.value;
+  });
+  Take.idea=$("take-idea").value.trim();
+  Take.frase=$("take-frase").value.trim();
+}
+async function subirImagenTake(file){
+  if(!file)return;
+  if(!/^image\//.test(file.type)){toast("Elige una imagen.","error");return;}
+  recogerTake();
+  $("take-img").classList.add("cargando");
+  try{
+    const blob=await comprimirImagen(file,1800);
+    Take.img=await Store.subirArchivo("takeaways",blob,Take.id);
+    pintarTake();toast("Imagen subida.");
+  }catch(err){toast(/bucket|not found|policy|403|42501/i.test(`${err&&err.message} ${err&&err.statusCode}`)?"Falta ejecutar supabase/07_takeaways.sql.":"No se pudo subir la imagen.","error");}
+  finally{$("take-img").classList.remove("cargando");$("take-file").value="";}
+}
+async function generarTake(){
+  if(!Take.img||Take.generando)return;
+  recogerTake();
+  Take.generando=true;pintarTake();
+  try{
+    const token=await Store.token();
+    const r=await fetch(API_IA(),{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({imagen:Take.img})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||"No se pudo leer la imagen.");
+    if(!d.takeaways.length&&!d.idea){toast("La IA no ha encontrado takeaways en esa imagen.","error");return;}
+    Take.lista=d.takeaways;
+    if(d.idea)Take.idea=d.idea;
+    if(d.frase)Take.frase=d.frase;
+    toast(`${d.takeaways.length} puntos leídos. Revísalos antes de guardar.`);
+  }catch(err){toast(err&&err.message||"No se pudo contactar con la IA.","error");}
+  finally{Take.generando=false;pintarTake();}
+}
+async function guardarTake(){
+  recogerTake();
+  const lista=Take.lista.map(t=>({titulo:String(t.titulo||"").trim(),texto:String(t.texto||"").trim()})).filter(t=>t.titulo||t.texto);
+  const btn=$("take-guardar");btn.disabled=true;
+  try{
+    await Store.actualizarCampos(Take.id,{takeaways:lista,takeawayIdea:Take.idea,takeawayFrase:Take.frase,takeawayImg:Take.img});
+    cerrarModal("take-overlay");toast("Takeaways guardados.");renderLeer();
+  }catch(err){toast(/takeaway/i.test(`${err&&err.message}`)?"Falta ejecutar supabase/07_takeaways.sql.":errTxt(err),"error");}
+  finally{btn.disabled=false;}
+}
+function abrirFoto(url){
+  $("foto-img").src=url;
+  $("foto-abrir").href=url;
+  abrirModal("foto-overlay");
+}
+
 /* ══ MODO DE PRUEBA (solo en local, con ?demo=1) ══
    Añade reflexiones ficticias a la vista para comprobar cómo queda la ficha.
    No escribe nada en la base de datos ni se activa en la web publicada. */
@@ -1465,6 +1577,14 @@ const ACCIONES={
   "reto-guardar":()=>guardarReto(false),
   "reto-quitar":()=>guardarReto(true),
   "cita-img":v=>abrirImgCita(v),
+  "take-editar":v=>abrirTake(v),
+  "take-subir":()=>$("take-file").click(),
+  "take-quitar-img":()=>{recogerTake();Take.img="";pintarTake();},
+  "take-generar":()=>generarTake(),
+  "take-anadir":()=>{recogerTake();Take.lista.push({titulo:"",texto:""});pintarTake();},
+  "take-borrar":v=>{recogerTake();Take.lista.splice(Number(v),1);pintarTake();},
+  "take-guardar":()=>guardarTake(),
+  foto:v=>abrirFoto(v),
   "hijas-mas":()=>{App.hijasTodas=!App.hijasTodas;renderLeer(false);},
   "img-estilo":v=>{ImgCita.estilo=Number(v);pintarImgCita();},
   "img-descargar":()=>descargarImg(),
@@ -1516,6 +1636,7 @@ function initEventos(){
   $("f-lib-categoria").addEventListener("change",e=>{App.lib.categoria=e.target.value;renderBiblioteca();});
   $("citas-q").addEventListener("input",()=>{clearTimeout(tq);tq=setTimeout(renderCitas,140);});
   fEl("portada-file").addEventListener("change",e=>subirPortada(e.target.files[0]));
+  $("take-file").addEventListener("change",e=>subirImagenTake(e.target.files[0]));
   $("buscar-q").addEventListener("input",()=>{Buscar.sel=0;renderBuscar();});
   $("buscar-q").addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"){e.preventDefault();moverBuscar(1);}
