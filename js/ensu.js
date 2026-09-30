@@ -908,6 +908,7 @@ function abrirForm(id){
   if(!Store.isAdmin()){abrirLogin();return;}
   prepararSelectsForm();
   limpiarErrores();
+  limpiarSugeridos();
   $("libro-form").reset();
   fEl("portadaId").value="";$("cover-opciones").hidden=true;$("cover-opciones").innerHTML="";
   Form.id=id!=null?Number(id):null;
@@ -1496,6 +1497,7 @@ async function guardarFin(){
    sirve para pasar la imagen a texto; siempre lo revisas antes de guardar. */
 const API_IA=()=>esLocal()?"https://ensu-eight.vercel.app/api/takeaway":"/api/takeaway";
 const API_PORTADA=()=>esLocal()?"https://ensu-eight.vercel.app/api/portada":"/api/portada";
+const API_SUGERIR=()=>esLocal()?"https://ensu-eight.vercel.app/api/sugerir":"/api/sugerir";
 /* Una portada "prestada" es la que vive en el servidor de otro: hoy está y
    mañana puede no estar. Las nuestras van al almacén de EnSu. */
 const portadaPrestada=e=>!!e.portada&&/^https?:\/\//i.test(e.portada)&&!/\/storage\/v1\/object\/public\/portadas\//.test(e.portada);
@@ -1512,6 +1514,81 @@ function traerPortadaEnSilencio(e){
   if(!Store.isAdmin()||!portadaPrestada(e)||!e.id)return;
   traerPortada(e.id,e.portada).catch(err=>console.warn("EnSu portada:",err&&err.message));
 }
+/* ── Completar la ficha de un libro con IA ── */
+/* Lo que se manda es solo lo que ya es público en la web: cómo has clasificado
+   tus libros. Ni notas privadas, ni reflexiones, ni citas, ni "cómo lo aplico". */
+function perfilLector(){
+  const conteo={};
+  visibles().forEach(e=>e.tags.forEach(t=>{conteo[t]=(conteo[t]||0)+1;}));
+  const ejemplos=visibles()
+    .filter(e=>e.tipo==="libro"&&(e.categoria||e.dificultad||e.tags.length))
+    .sort((a,b)=>fechaNum(b)-fechaNum(a)).slice(0,30)
+    .map(e=>({libro:e.libro,autor:e.autor,categoria:e.categoria,finalidad:e.finalidad,
+      dificultad:e.dificultad,paginas:e.paginasTotal||0,tags:e.tags.slice(0,6)}));
+  return{
+    finalidades:opcionesDe("finalidad",FINALIDADES),
+    categorias:opcionesDe("categoria",CATEGORIAS),
+    dificultades:opcionesDe("dificultad",DIFICULTADES),
+    etiquetas:Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,45).map(([t,n])=>`${t} (${n})`),
+    ejemplos
+  };
+}
+/* Las páginas mejor de un catálogo real que de la memoria de una IA */
+async function paginasOpenLibrary(libro,autor){
+  try{
+    const q=encodeURIComponent([libro,autor].filter(Boolean).join(" "));
+    const r=await fetch(`https://openlibrary.org/search.json?q=${q}&limit=5&fields=title,author_name,number_of_pages_median`);
+    if(!r.ok)return 0;
+    const docs=(await r.json()).docs||[];
+    const n=norma(libro);
+    const d=docs.find(x=>norma(x.title||"")===n&&x.number_of_pages_median)||docs.find(x=>x.number_of_pages_median);
+    return d?Number(d.number_of_pages_median)||0:0;
+  }catch(_){return 0;}
+}
+/* Nunca pisa lo que hayas escrito tú: solo entra en los huecos */
+function ponerSugerido(k,valor,etiqueta,puestos){
+  if(!valor)return;
+  const el=fEl(k);
+  if(!el||String(el.value).trim())return;
+  if(el.tagName==="SELECT"&&![...el.options].some(o=>o.value===valor))return;
+  el.value=valor;
+  el.classList.add("sugerido");
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+  el.dispatchEvent(new Event("change",{bubbles:true}));
+  puestos.push(etiqueta);
+}
+function limpiarSugeridos(){$$("#libro-form .sugerido").forEach(el=>el.classList.remove("sugerido"));const e=$("sugerir-estado");if(e){e.hidden=true;e.className="form-hint";}}
+async function sugerirDatos(){
+  const libro=fEl("libro").value.trim(),autor=fEl("autor").value.trim();
+  const est=$("sugerir-estado"),btn=document.querySelector('[data-act="sugerir-datos"]');
+  if(!libro){marcarError("libro","Escribe el título para que la IA pueda buscarlo.");fEl("libro").focus();return;}
+  limpiarErrores();
+  btn.disabled=true;est.hidden=false;est.className="form-hint";est.textContent="Buscando el libro…";
+  try{
+    const paginas=await paginasOpenLibrary(libro,autor);
+    est.textContent="Viendo cómo encaja con lo que ya has leído…";
+    const token=await Store.token();
+    const r=await fetch(API_SUGERIR(),{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${token}`},
+      body:JSON.stringify({libro,autor,paginas,perfil:perfilLector()})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||"No se pudo completar la ficha.");
+    const puestos=[];
+    ponerSugerido("paginasTotal",d.paginasTotal?String(d.paginasTotal):"","páginas"+(d.origenPaginas==="ia"?" (a ojo)":""),puestos);
+    ponerSugerido("finalidad",d.finalidad,"finalidad",puestos);
+    ponerSugerido("categoria",d.categoria,"categoría",puestos);
+    ponerSugerido("dificultad",d.dificultad,"dificultad",puestos);
+    ponerSugerido("tags",(d.tags||[]).join(", "),"etiquetas",puestos);
+    ponerSugerido("reflexion",d.resumen,"resumen",puestos);
+    if(!puestos.length){
+      est.className="form-hint mal";
+      est.textContent=d.nota||"La IA no ha sabido qué poner, o ya lo tenías relleno. Complétalo a mano.";
+      return;
+    }
+    est.textContent=`Rellenado: ${puestos.join(", ")}. Repásalo antes de guardar${d.nota?` · ${d.nota}`:""}`;
+  }catch(err){est.className="form-hint mal";est.textContent=errTxt(err);}
+  finally{btn.disabled=false;}
+}
+
 /* Sin que tengas que pedirlo: al entrar como autor se van copiando las que
    falten, de una en una y despacio, para no cargar la página. Nunca borra
    nada; si un enlace está roto lo deja como está y te lo dirá el botón de
@@ -2296,6 +2373,7 @@ const ACCIONES={
   "subir-ebook":v=>elegirEbook(v),
   "quitar-ebook":v=>quitarEbook(v),
   "guardar-portadas":()=>{cerrarModal("mas-overlay");guardarPortadas();},
+  "sugerir-datos":()=>sugerirDatos(),
   "descargar-ebook":v=>descargarEbook(v),
   "bajar-ebook":v=>bajarEbook(v),
   "compartir-ebook":v=>alternarCompartir(v),

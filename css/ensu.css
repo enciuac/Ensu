@@ -873,6 +873,10 @@ html.dark .lec-descarga{color:var(--accent)}
 .cap-res{font-family:var(--serif);font-size:14px;color:var(--text2)}
 .cap-res mark{background:rgba(196,169,125,.4);color:inherit;border-radius:3px;padding:0 1px}
 /* Subrayados en la ficha del libro */
+/* Completar con IA: lo que ha puesto la máquina se ve de un vistazo */
+.sugerir-caja{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+#libro-form .sugerido{border-color:var(--accent);background:rgba(196,169,125,.12)}
+.form-hint.mal{color:var(--danger)}
 .marcas-ficha{display:flex;flex-direction:column;gap:20px}
 .marca-f{border-left:2px solid var(--borde2);padding-left:16px}
 .marca-cita{font-family:var(--serif);font-size:18px;line-height:1.5;font-style:italic;margin:4px 0 0}

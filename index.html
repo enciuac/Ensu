@@ -344,6 +344,10 @@ if(d){document.documentElement.classList.add("dark");var m=document.querySelecto
             <div class="form-g"><label for="f-libro" id="lbl-libro">Título del libro</label><input type="text" id="f-libro" list="dl-libros" autocomplete="off"><span class="field-err" id="err-libro"></span></div>
             <div class="form-g"><label for="f-autor">Autor</label><input type="text" id="f-autor" list="dl-autores" autocomplete="off"></div>
           </div>
+          <div class="form-g solo-libro sugerir-caja">
+            <button type="button" class="chip-btn" data-act="sugerir-datos"><svg class="i sm"><use href="#i-sparkle"/></svg>Completar con IA</button>
+            <p class="form-hint" id="sugerir-estado" role="status" hidden></p>
+          </div>
           <div class="form-row">
             <div class="form-g"><label for="f-fecha">Fecha <small>(el público solo ve el año)</small></label><input type="date" id="f-fecha"></div>
             <div class="form-g"><label for="f-progreso">Progreso <small id="progreso-auto" hidden>· calculado por páginas</small> — <b id="progreso-val">0%</b></label><input type="range" id="f-progreso" min="0" max="100" value="0" style="margin-top:12px"></div>
