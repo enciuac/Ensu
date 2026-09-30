@@ -826,6 +826,10 @@ html.dark .take-img span{color:var(--accent)}
 .lec-card .cover{width:78px}
 .lec-body{flex:1;min-width:0;display:flex;flex-direction:column}
 .lec-t{font-family:var(--serif);font-size:20px;font-weight:500;line-height:1.2;margin:2px 0 4px}
+.lec-formato{background:var(--surface2);border-radius:4px;padding:1px 6px;letter-spacing:.06em}
+.lec-descarga{margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--accent-dk)}
+html.dark .lec-descarga{color:var(--accent)}
+.lec-card:hover .lec-descarga{text-decoration:underline;text-underline-offset:3px}
 .lec-x{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .ebook-fila{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--borde);border-radius:var(--r);padding:14px 16px}
 .ebook-info{display:flex;align-items:center;gap:12px;min-width:0}

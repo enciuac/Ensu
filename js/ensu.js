@@ -104,6 +104,7 @@ const Store=(()=>{
       takeaways:Array.isArray(r.takeaways)?r.takeaways.map(t=>({titulo:String((t&&t.titulo)||""),texto:String((t&&t.texto)||"")})):[],
       takeawayIdea:r.takeaway_idea||"",takeawayFrase:r.takeaway_frase||"",takeawayImg:r.takeaway_img||"",
       ebookRuta:r.ebook_ruta||"",ebookNombre:r.ebook_nombre||"",ebookTipo:r.ebook_tipo||"",ebookCfi:r.ebook_cfi||"",
+      ebookPublico:!!r.ebook_publico,
       terminadoEn:r.terminado_en||""
     };
     return n;
@@ -111,7 +112,7 @@ const Store=(()=>{
   /* App → base de datos. Solo incluye los campos presentes. */
   const MAPA={tipo:"tipo",estado:"estado",libro:"libro",autor:"autor",fecha:"fecha",tituloRef:"titulo_ref",reflexion:"reflexion",cita:"cita",vida:"vida",tension:"tension",finalidad:"finalidad",categoria:"categoria",dificultad:"dificultad",tags:"tags",progreso:"progreso",puntuacion:"puntuacion",paginasTotal:"paginas_total",paginaActual:"pagina_actual",orden:"orden",portada:"portada",portadaId:"portada_id",terminadoEn:"terminado_en",entradaPadre:"entrada_padre",
     takeaways:"takeaways",takeawayIdea:"takeaway_idea",takeawayFrase:"takeaway_frase",takeawayImg:"takeaway_img",
-    ebookRuta:"ebook_ruta",ebookNombre:"ebook_nombre",ebookTipo:"ebook_tipo",ebookCfi:"ebook_cfi"};
+    ebookRuta:"ebook_ruta",ebookNombre:"ebook_nombre",ebookTipo:"ebook_tipo",ebookCfi:"ebook_cfi",ebookPublico:"ebook_publico"};
   function aDb(o){
     const r={};
     for(const[k,col]of Object.entries(MAPA)){
@@ -120,6 +121,7 @@ const Store=(()=>{
       if(k==="fecha"||k==="terminadoEn")v=/^\d{4}-\d{2}-\d{2}$/.test(v||"")?v:null;
       else if(k==="tags")v=Array.isArray(v)?v:[];
       else if(k==="takeaways")v=Array.isArray(v)?v:[];
+      else if(k==="ebookPublico")v=!!v;
       else if(["puntuacion","paginasTotal","paginaActual","orden","entradaPadre"].includes(k))v=v==null||v===""||!Number.isFinite(Number(v))?null:Math.round(Number(v));
       else if(k==="progreso"||k==="portadaId")v=Math.round(numOr(v,0));
       else v=v==null?"":String(v);
@@ -242,6 +244,14 @@ const Store=(()=>{
     return{ruta};
   }
   const borrarEbook=ruta=>ruta?sb.storage.from("ebooks").remove([ruta]).then(({error})=>{if(error)throw error;}):Promise.resolve();
+  /* Compartir: copia del almacén privado al público (y a la inversa para dejar de compartir) */
+  async function compartirEbook(ruta){
+    const{error}=await sb.storage.from("ebooks").copy(ruta,ruta,{destinationBucket:"descargas"});
+    if(error&&!/exists/i.test(error.message||""))throw error;
+    return sb.storage.from("descargas").getPublicUrl(ruta).data.publicUrl;
+  }
+  const dejarDeCompartir=ruta=>ruta?sb.storage.from("descargas").remove([ruta]).then(({error})=>{if(error&&!/not found/i.test(error.message||""))throw error;}):Promise.resolve();
+  const urlDescarga=(ruta,nombre)=>sb.storage.from("descargas").getPublicUrl(ruta,{download:nombre||true}).data.publicUrl;
   async function urlEbook(ruta){
     const{data,error}=await sb.storage.from("ebooks").createSignedUrl(ruta,7200);
     if(error)throw error;
@@ -257,7 +267,7 @@ const Store=(()=>{
     tareas:()=>tareas,guardarTarea,eliminarTarea,actualizarTarea,
     login,logout,resetPassword,nuevaPassword,copia,
     ajustes:()=>ajustes,guardarAjuste,historial:()=>historial,subirPortada,subirArchivo,token,
-    subirEbook,borrarEbook,urlEbook,
+    subirEbook,borrarEbook,urlEbook,compartirEbook,dejarDeCompartir,urlDescarga,
     isAdmin:()=>admin,cargado:()=>cargado,errorCarga:()=>errorCarga,
     onChange:f=>subs.add(f),onAuth:f=>authSubs.add(f)};
 })();
@@ -752,6 +762,7 @@ function renderLeer(scrollTop){
       ?`<div class="ebook-fila">
           <div class="ebook-info">${icon("i-book")}<div><p class="ebook-n">${esc(e.ebookNombre||"Archivo")}</p><p class="form-hint">${esc(e.ebookTipo.toUpperCase())} · guardado en privado</p></div></div>
           <div class="ebook-acts">
+            <button class="chip-btn" data-act="compartir-ebook" data-v="${e.id}">${icon(e.ebookPublico?"i-check":"i-download","sm")} ${e.ebookPublico?"Descargable por todos":"Permitir descarga"}</button>
             <button class="btn-sm" data-act="abrir-lector" data-v="${e.id}">Leer ahora</button>
             <button class="btn-icon peligro" data-act="quitar-ebook" data-v="${e.id}" title="Quitar archivo" aria-label="Quitar archivo">${icon("i-trash","sm")}</button>
           </div>
@@ -1591,26 +1602,30 @@ const conEbook=()=>visibles().filter(e=>e.ebookRuta).sort((a,b)=>{
 });
 
 function renderLector(){
-  const cont=$("lector-grid");
-  if(!Store.isAdmin()){cont.innerHTML=`<div class="empty-state">${icon("i-lock")}<p>Inicia sesión para leer tus libros.</p></div>`;$("lector-sub").textContent="";return;}
+  const cont=$("lector-grid"),admin=Store.isAdmin();
   if(estadoCarga(cont,3))return;
-  const lista=conEbook();
-  $("lector-sub").textContent=lista.length?`${lista.length} ${lista.length===1?"libro":"libros"} en tu estantería`:"";
+  const lista=admin?conEbook():conEbook().filter(e=>e.ebookPublico);
+  $("lector-eyebrow").textContent=admin?"Solo autor":"Estantería";
+  $("lector-h1").textContent=admin?"Leer":"Libros";
+  $("lector-sub").textContent=lista.length
+    ?(admin?`${lista.length} ${lista.length===1?"libro":"libros"} en tu estantería`:`${lista.length} ${lista.length===1?"libro disponible para descargar":"libros disponibles para descargar"}`)
+    :"";
   cont.innerHTML=lista.length?lista.map(e=>{
     Portadas.pedir(e);
-    return`<article class="lec-card" data-act="abrir-lector" data-v="${e.id}" tabindex="0">
+    const accion=admin?`data-act="abrir-lector" data-v="${e.id}"`:`data-act="descargar-ebook" data-v="${e.id}"`;
+    return`<article class="lec-card" ${accion} tabindex="0">
       ${Portadas.html(e)}
       <div class="lec-body">
         <p class="card-autor">${esc(e.autor||"")}</p>
         <h3 class="lec-t">${esc(e.libro||titulo(e))}</h3>
-        <p class="lec-x">${esc(e.ebookTipo.toUpperCase())}${e.paginasTotal?` · ${e.paginasTotal} pág.`:""}</p>
-        <div class="ley-prog">
+        <p class="lec-x"><span class="lec-formato">${esc(e.ebookTipo.toUpperCase())}</span>${e.paginasTotal?` · ${e.paginasTotal} pág.`:""}${admin&&e.ebookPublico?" · compartido":""}</p>
+        ${admin?`<div class="ley-prog">
           <div class="prog-meta"><span>${e.estado==="terminado"?"Terminado":e.progreso?"Seguir leyendo":"Empezar"}</span><b>${e.progreso}%</b></div>
           <div class="prog-track"><div class="prog-fill" style="width:${e.progreso}%"></div></div>
-        </div>
+        </div>`:`<p class="lec-descarga">${icon("i-download","sm")} Descargar ${esc(e.ebookTipo.toUpperCase())}</p>`}
       </div>
     </article>`;}).join("")
-    :`<div class="empty-state">${icon("i-book")}<p>Todavía no has subido ningún libro.</p><p class="form-hint" style="margin-top:8px">Abre un libro de tu biblioteca y súbelo desde su ficha.</p></div>`;
+    :`<div class="empty-state">${icon("i-book")}<p>${admin?"Todavía no has subido ningún libro.":"Todavía no hay libros para descargar."}</p>${admin?`<p class="form-hint" style="margin-top:8px">Abre un libro de tu biblioteca y súbelo desde su ficha.</p>`:""}</div>`;
 }
 
 function cargarScript(src){
@@ -1743,6 +1758,27 @@ async function cerrarLector(){
 }
 
 /* ── Subir el archivo desde la ficha del libro ── */
+function descargarEbook(id){
+  const e=visibles().find(x=>String(x.id)===String(id));
+  if(!e||!e.ebookPublico||!e.ebookRuta)return;
+  const nombre=e.ebookNombre||`${e.libro||"libro"}.${e.ebookTipo}`;
+  const a=document.createElement("a");
+  a.href=Store.urlDescarga(e.ebookRuta,nombre);a.download=nombre;a.rel="noopener";
+  document.body.appendChild(a);a.click();a.remove();
+}
+/* Compartir o dejar de compartir un archivo (decisión del autor, libro a libro) */
+async function alternarCompartir(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e||!e.ebookRuta)return;
+  const activar=!e.ebookPublico;
+  if(activar&&!confirm("Cualquiera podrá descargar este archivo desde la web.\n\nCompártelo solo si es tuyo, es de dominio público o tienes permiso.\n\n¿Seguimos?"))return;
+  try{
+    if(activar)await Store.compartirEbook(e.ebookRuta);
+    else await Store.dejarDeCompartir(e.ebookRuta);
+    await Store.actualizarCampos(e.id,{ebookPublico:activar});
+    toast(activar?"Archivo disponible para descargar.":"Archivo retirado de las descargas.");
+    renderLeer();
+  }catch(err){toast(errSubida(err),"error");}
+}
 async function subirEbook(file){
   if(!file)return;
   const ext=(file.name.split(".").pop()||"").toLowerCase();
@@ -1763,7 +1799,8 @@ async function quitarEbook(id){
   if(!confirm(`¿Quitar el archivo de «${e.libro||titulo(e)}»? Tus notas y tu progreso se conservan.`))return;
   try{
     await Store.borrarEbook(e.ebookRuta);
-    await Store.actualizarCampos(e.id,{ebookRuta:"",ebookNombre:"",ebookTipo:"",ebookCfi:""});
+    if(e.ebookPublico)await Store.dejarDeCompartir(e.ebookRuta);
+    await Store.actualizarCampos(e.id,{ebookRuta:"",ebookNombre:"",ebookTipo:"",ebookCfi:"",ebookPublico:false});
     toast("Archivo eliminado.");renderLeer();
   }catch(err){toast(errSubida(err),"error");}
 }
@@ -1861,6 +1898,8 @@ const ACCIONES={
   "lector-saltar":v=>saltarA(v),
   "subir-ebook":v=>elegirEbook(v),
   "quitar-ebook":v=>quitarEbook(v),
+  "descargar-ebook":v=>descargarEbook(v),
+  "compartir-ebook":v=>alternarCompartir(v),
   "take-subir":()=>$("take-file").click(),
   "take-quitar-img":()=>{recogerTake();Take.img="";pintarTake();},
   "take-generar":()=>generarTake(),
