@@ -1354,7 +1354,7 @@ function renderBuscar(){
 function moverBuscar(d){
   if(!Buscar.res.length)return;
   Buscar.sel=(Buscar.sel+d+Buscar.res.length)%Buscar.res.length;
-  $(".buscar-item").forEach((el,i)=>el.classList.toggle("sel",i===Buscar.sel));
+  $$(".buscar-item").forEach((el,i)=>el.classList.toggle("sel",i===Buscar.sel));
   const el=$(".buscar-item")[Buscar.sel];if(el)el.scrollIntoView({block:"nearest"});
 }
 function irABuscado(id){
@@ -1418,13 +1418,13 @@ function abrirTake(id){
   Take.id=e.id;Take.img=e.takeawayImg;Take.lista=e.takeaways.map(t=>({...t}));
   Take.idea=e.takeawayIdea;Take.frase=e.takeawayFrase;Take.generando=false;
   $("take-title").textContent=e.libro||titulo(e);
-  pintarTake();
+  pintarTake();estadoTake("");
   abrirModal("take-overlay");
 }
 function pintarTake(){
   $("take-img").innerHTML=Take.img
-    ?`<img src="${esc(Take.img)}" alt="Imagen de takeaways"><button class="btn-icon peligro" data-act="take-quitar-img" title="Quitar imagen" aria-label="Quitar imagen">${icon("i-trash","sm")}</button>`
-    :`<div class="take-img-vacio">${icon("i-image")}<span>Sube la imagen con los takeaways</span></div>`;
+    ?`<img src="${esc(Take.img)}" alt="Imagen de takeaways" onerror="estadoTake('La imagen se subió pero no se puede mostrar. Comprueba que el bucket sea público.',true)"><button class="btn-icon peligro" data-act="take-quitar-img" title="Quitar imagen" aria-label="Quitar imagen">${icon("i-trash","sm")}</button>`
+    :`<div class="take-img-vacio">${icon("i-image")}<span>Arrastra la imagen, pégala o pulsa para elegirla</span></div>`;
   $("take-subir").textContent=Take.img?"Cambiar imagen":"Subir imagen";
   const btn=$("take-generar");
   btn.disabled=!Take.img||Take.generando;
@@ -1442,7 +1442,7 @@ function pintarTake(){
   $("take-frase").value=Take.frase;
 }
 function recogerTake(){
-  $("#take-lista [data-take]").forEach(el=>{
+  $$("#take-lista [data-take]").forEach(el=>{
     const i=Number(el.dataset.i);
     if(Take.lista[i])Take.lista[i][el.dataset.take]=el.value;
   });
@@ -1458,16 +1458,31 @@ function errSubida(err){
   if(/fetch|network/i.test(t))return"Sin conexión con Supabase.";
   return"No se pudo subir la imagen: "+(err&&err.message?err.message:"error desconocido");
 }
+function estadoTake(txt,error){
+  const el=$("take-estado");
+  if(!el)return;
+  el.textContent=txt||"";
+  el.classList.toggle("error",!!error);
+  el.hidden=!txt;
+}
 async function subirImagenTake(file){
-  if(!file)return;
-  if(!/^image\//.test(file.type)){toast("Elige una imagen.","error");return;}
+  if(!file){estadoTake("No llegó ningún archivo.",true);return;}
+  if(!/^image\//.test(file.type)){estadoTake(`Eso no es una imagen (${file.type||"tipo desconocido"}).`,true);return;}
   recogerTake();
   $("take-img").classList.add("cargando");
+  const kb=Math.round(file.size/1024);
   try{
+    estadoTake(`Preparando ${esc(file.name||"imagen")} (${kb} KB)…`);
     const blob=await comprimirImagen(file,1800);
-    Take.img=await Store.subirArchivo("takeaways",blob,Take.id);
-    pintarTake();toast("Imagen subida.");
-  }catch(err){toast(errSubida(err),"error");}
+    estadoTake(`Subiendo (${Math.round(blob.size/1024)} KB)…`);
+    const url=await Store.subirArchivo("takeaways",blob,Take.id);
+    Take.img=url;
+    pintarTake();
+    estadoTake("Imagen subida. Recuerda pulsar «Guardar takeaways».");
+  }catch(err){
+    estadoTake(errSubida(err),true);
+    toast(errSubida(err),"error");
+  }
   finally{$("take-img").classList.remove("cargando");$("take-file").value="";}
 }
 async function generarTake(){
