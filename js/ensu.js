@@ -720,7 +720,13 @@ function renderLeer(scrollTop){
         ${padre?`<button class="chip-btn leer-padre" data-act="leer" data-v="${padre.id}">${icon("i-book","sm")} Sobre ${esc(padre.libro||titulo(padre))}</button>`:""}
         ${e.tags.length?`<div class="leer-tags">${e.tags.map(t=>`<span class="tag" data-act="tag" data-v="${esc(t)}">${esc(t)}</span>`).join("")}</div>`:""}
       </div>${quick}</header>`;
-  const sec=(lbl,html)=>`<section class="leer-seccion"><p class="leer-sec-lbl">${lbl}</p>${html}</section>`;
+  const sec=(lbl,html)=>{
+    const clave=norma(String(lbl).replace(/<[^>]*>/g,"")).split(" ").slice(0,2).join("-");
+    return `<details class="leer-seccion" data-sec="${esc(clave)}"${seccionAbierta(clave)?" open":""}>
+      <summary class="leer-sec-lbl">${lbl}${icon("i-chevron","sm")}</summary>
+      <div class="leer-sec-cuerpo">${html}</div>
+    </details>`;
+  };
   let body="";
   if(e.tipo!=="reflexion"&&e.tituloRef)body+=`<p class="leer-frase">${esc(e.tituloRef)}</p>`;
   const take=takeawaysHTML(e);
@@ -761,6 +767,10 @@ function renderLeer(scrollTop){
   lateral+=relHtml;
   $("leer-rel").innerHTML="";
   cont.innerHTML=hero+`<div class="leer-cols"><div class="leer-body">${body}</div>${lateral?`<aside class="leer-side">${lateral}</aside>`:""}</div>`;
+  $$("#leer-content details[data-sec]").forEach(d=>d.addEventListener("toggle",()=>{
+    recordarSeccion(d.dataset.sec,d.open);
+    ajustarLateral();
+  }));
   if(scrollTop)$("leer-panel").scrollTop=0;
   requestAnimationFrame(ajustarLateral);
 }
@@ -1410,6 +1420,23 @@ function takeawaysHTML(e){
   if(e.takeawayFrase)h+=`<p class="take-frase">${esc(e.takeawayFrase)}</p>`;
   if(e.takeawayImg)h+=`<button class="take-img" data-act="foto" data-v="${esc(e.takeawayImg)}"><img src="${esc(e.takeawayImg)}" alt="Resumen visual de ${esc(e.libro||titulo(e))}" loading="lazy"><span>${icon("i-image","sm")} Ver el resumen visual completo</span></button>`;
   return h;
+}
+
+/* ── Qué secciones quedan abiertas: lo elige el lector y se recuerda ── */
+const SECCIONES_ABIERTAS=["takeaways","resumen","teoria"];
+let _secs=null;
+function secsGuardadas(){
+  if(_secs)return _secs;
+  try{_secs=JSON.parse(localStorage.getItem("ensu-secciones")||"{}");}catch(_){_secs={};}
+  return _secs;
+}
+function seccionAbierta(clave){
+  const g=secsGuardadas();
+  return clave in g?!!g[clave]:SECCIONES_ABIERTAS.includes(clave);
+}
+function recordarSeccion(clave,abierta){
+  const g=secsGuardadas();g[clave]=abierta;
+  try{localStorage.setItem("ensu-secciones",JSON.stringify(g));}catch(_){}
 }
 
 /* ── Editor ── */
