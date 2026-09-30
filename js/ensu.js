@@ -1655,21 +1655,45 @@ async function abrirLector(id){
       return;
     }
     $("lector-pie").hidden=false;
+    avisoLector("Descargando el libro…");
+    const resp=await fetch(url);
+    if(!resp.ok)throw new Error(`No se pudo descargar el archivo (error ${resp.status}). Revisa los permisos del almacén.`);
+    const datos=await resp.arrayBuffer();
+    if(!datos.byteLength)throw new Error("El archivo está vacío.");
+    if(tieneDRM(datos))throw new Error("Este EPUB tiene protección anticopia (DRM) y no se puede leer en el navegador. Puedes descargarlo y abrirlo en tu lector habitual.");
+    avisoLector("Preparando la lectura…");
     for(const src of EPUB_JS)await cargarScript(src);
-    await mostrarEpub(url,e);
+    await mostrarEpub(datos,e);
   }catch(err){
-    $("lector-cont").innerHTML=`<p class="lector-cargando">${esc(err&&err.message?err.message:"No se pudo abrir el libro.")}</p>`;
+    const msg=err&&err.message?err.message:"No se pudo abrir el libro.";
+    $("lector-cont").innerHTML=`<div class="lector-cargando"><p>${esc(msg)}</p>
+      <p style="margin-top:14px"><button class="btn-sm" data-act="bajar-ebook" data-v="${e.id}">Descargar el archivo</button></p></div>`;
   }
 }
 
-async function mostrarEpub(url,e){
+/* Un EPUB con DRM lleva META-INF/encryption.xml: se ve en los nombres del zip */
+function tieneDRM(buffer){
+  const bytes=new Uint8Array(buffer.slice(0,Math.min(buffer.byteLength,300000)));
+  const txt=new TextDecoder("latin1").decode(bytes);
+  return /META-INF\/(encryption|rights)\.xml/i.test(txt);
+}
+function avisoLector(txt){
+  const c=$("lector-cont");
+  if(c&&!c.querySelector(".epub-container"))c.innerHTML=`<p class="lector-cargando">${esc(txt)}</p>`;
+}
+async function mostrarEpub(datos,e){
   $("lector-cont").innerHTML="";
-  const libro=window.ePub(url);
+  const libro=window.ePub(datos);
   Lector.libro=libro;
   const rend=libro.renderTo("lector-cont",{width:"100%",height:"100%",flow:"paginated",spread:"none",allowScriptedContent:false});
   Lector.rend=rend;
   aplicarTemaLector();
-  await rend.display(Lector.cfi||undefined);
+  const aTiempo=await Promise.race([
+    rend.display(Lector.cfi||undefined).then(()=>true).catch(()=>false),
+    new Promise(r=>setTimeout(()=>r("tarde"),20000))
+  ]);
+  if(aTiempo==="tarde")throw new Error("El libro tarda demasiado en abrirse. Puede que el archivo esté dañado.");
+  if(aTiempo===false&&Lector.cfi){await rend.display();}  // la posición guardada ya no vale
   rend.on("relocated",loc=>{
     Lector.cfi=loc.start.cfi;
     if(loc.start.percentage)Lector.pct=Math.round(loc.start.percentage*100);
@@ -1758,6 +1782,14 @@ async function cerrarLector(){
 }
 
 /* ── Subir el archivo desde la ficha del libro ── */
+async function bajarEbook(id){
+  const e=visibles().find(x=>String(x.id)===String(id));if(!e||!e.ebookRuta)return;
+  try{
+    const url=await Store.urlEbook(e.ebookRuta);
+    const a=document.createElement("a");a.href=url;a.download=e.ebookNombre||"libro";a.rel="noopener";
+    document.body.appendChild(a);a.click();a.remove();
+  }catch(err){toast(errSubida(err),"error");}
+}
 function descargarEbook(id){
   const e=visibles().find(x=>String(x.id)===String(id));
   if(!e||!e.ebookPublico||!e.ebookRuta)return;
@@ -1899,6 +1931,7 @@ const ACCIONES={
   "subir-ebook":v=>elegirEbook(v),
   "quitar-ebook":v=>quitarEbook(v),
   "descargar-ebook":v=>descargarEbook(v),
+  "bajar-ebook":v=>bajarEbook(v),
   "compartir-ebook":v=>alternarCompartir(v),
   "take-subir":()=>$("take-file").click(),
   "take-quitar-img":()=>{recogerTake();Take.img="";pintarTake();},
