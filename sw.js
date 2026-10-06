@@ -4,7 +4,7 @@
    - Portadas: caché primero (no cambian).
    Nunca se cachean notas privadas, tareas ni historial. Al cerrar sesión la web
    borra la caché de datos ("ensu-datos"). */
-const VERSION = "ensu-web-v13";
+const VERSION = "ensu-web-v14";
 const DATOS = "ensu-datos";
 const PORTADAS = "ensu-portadas";
 // Las direcciones van EXACTAMENTE como las pide index.html, con su ?v=2:
@@ -18,7 +18,9 @@ self.addEventListener("install", e => {
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
-    .then(ks => Promise.all(ks.filter(k => ![VERSION, DATOS, PORTADAS].includes(k) && !k.startsWith("ensu-ext")).map(k => caches.delete(k))))
+    // DATOS se tira entera al actualizar: las copias viejas pueden llevar campos
+    // que ya no deben salir de casa (la fecha completa, sin ir más lejos).
+    .then(ks => Promise.all([caches.delete(DATOS), ...ks.filter(k => ![VERSION, DATOS, PORTADAS].includes(k) && !k.startsWith("ensu-ext")).map(k => caches.delete(k))]))
     .then(() => self.clients.claim()));
 });
 

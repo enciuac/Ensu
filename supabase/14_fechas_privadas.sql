@@ -46,6 +46,15 @@ grant select on public.entradas_publicas to anon, authenticated;
 --    El autor (authenticated) la conserva entera.
 revoke select on public.entradas from anon;
 
+-- 3) El tiempo real también mandaba la fila entera por el websocket, con su
+--    fecha dentro. La web solo usa el aviso de "algo ha cambiado", nunca los
+--    datos que llegan, así que basta con publicar la clave.
+do $$
+begin
+  begin alter publication supabase_realtime drop table public.entradas; exception when others then null; end;
+  begin alter publication supabase_realtime add table public.entradas (id); exception when others then null; end;
+end $$;
+
 commit;
 
 -- ════════════════════════════════════════════════════════════
