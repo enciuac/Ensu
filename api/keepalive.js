@@ -6,9 +6,13 @@ const SUPABASE_KEY = "sb_publishable_Ze4N3Wl2SyqnBmEtRlcO-A_M1drZqmX";
 
 module.exports = async (req, res) => {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/entradas?select=id&limit=1`, {
+    // Por la vista pública, que es lo que puede leer esta clave. Si todavía no
+    // existe, se pregunta por la tabla como antes.
+    const pedir = recurso => fetch(`${SUPABASE_URL}/rest/v1/${recurso}?select=id&limit=1`, {
       headers: { apikey: SUPABASE_KEY }
     });
+    let r = await pedir("entradas_publicas");
+    if (!r.ok) r = await pedir("entradas");
     res.status(r.ok ? 200 : 502).json({ ok: r.ok, status: r.status, at: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err && err.message || err) });

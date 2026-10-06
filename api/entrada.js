@@ -57,7 +57,8 @@ module.exports = async (req, res) => {
       destino = `${base}/#/resumen/${y}`;
       url = `${base}/r/${y}`;
       const filas = await entradasPub(`select=*`);
-      const n = filas.filter(e => e.tipo === "libro" && e.estado === "terminado" && String(e.terminado_en || e.fecha || "").startsWith(y)).length;
+      const anyo = e => String(e.anio_fin || e.anio || "") || String(e.terminado_en || e.fecha || "").slice(0, 4);
+      const n = filas.filter(e => e.tipo === "libro" && e.estado === "terminado" && anyo(e) === y).length;
       titulo = `Mi ${y} en libros`;
       desc = `${n} ${n === 1 ? "libro leído" : "libros leídos"} en ${y}: mi estantería, favoritos y las ideas que más se repitieron.`;
     }

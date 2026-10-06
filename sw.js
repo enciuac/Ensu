@@ -4,7 +4,7 @@
    - Portadas: caché primero (no cambian).
    Nunca se cachean notas privadas, tareas ni historial. Al cerrar sesión la web
    borra la caché de datos ("ensu-datos"). */
-const VERSION = "ensu-web-v14";
+const VERSION = "ensu-web-v15";
 const DATOS = "ensu-datos";
 const PORTADAS = "ensu-portadas";
 // Las direcciones van EXACTAMENTE como las pide index.html, con su ?v=2:
@@ -38,18 +38,19 @@ const redPrimero = async (req, cache) => {
 const cachePrimero = async (req, cache) => {
   const c = await caches.match(req);
   if (c) return c;
-  const r = await fetch(req);
-  // Solo se guarda lo que de verdad vino bien. Una respuesta opaca no dice si
-  // fue un 200 o un 404, así que se vuelve a pedir en modo cors para saberlo:
-  // si tampoco se puede, se deja pasar sin guardar antes que fijar un error.
-  if (r.ok) (await caches.open(cache)).put(req, r.clone());
-  else if (r.type === "opaque") {
-    try {
-      const prueba = await fetch(req.url, { mode: "cors", credentials: "omit" });
-      if (prueba.ok) (await caches.open(cache)).put(req, r.clone());
-    } catch (_) { /* no se puede comprobar: mejor no guardar nada */ }
-  }
-  return r;
+  // Se pide en cors primero: así la respuesta SÍ dice si vino bien y no se
+  // guarda un 404. Open Library y el almacén de Supabase lo permiten. Si el
+  // servidor no admite cors, se cae a la petición normal y no se guarda nada:
+  // mejor volver a pedirla cada vez que dejar una portada rota fijada.
+  try {
+    const r = await fetch(req.url, { mode: "cors", credentials: "omit" });
+    if (r.ok) {
+      (await caches.open(cache)).put(req, r.clone());
+      return r;
+    }
+    if (r.status) return fetch(req);        // respondió, pero mal: ni guardar ni insistir
+  } catch (_) { /* sin cors: seguimos por el camino de siempre */ }
+  return fetch(req);
 };
 const cacheYActualiza = async (req, cache) => {
   const c = await caches.match(req);
@@ -62,7 +63,7 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const u = new URL(req.url);
   // Datos públicos de Supabase
-  if (/\.supabase\.co$/.test(u.hostname) && /^\/rest\/v1\/(entradas|ajustes)$/.test(u.pathname)) { e.respondWith(redPrimero(req, DATOS)); return; }
+  if (/\.supabase\.co$/.test(u.hostname) && /^\/rest\/v1\/(entradas|entradas_publicas|ajustes)$/.test(u.pathname)) { e.respondWith(redPrimero(req, DATOS)); return; }
   // Portadas propias (Storage) y de Open Library
   if ((/\.supabase\.co$/.test(u.hostname) && u.pathname.startsWith("/storage/v1/object/public/portadas/")) || u.hostname === "covers.openlibrary.org") { e.respondWith(cachePrimero(req, PORTADAS)); return; }
   // Fuentes y librería de Supabase

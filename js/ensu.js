@@ -162,8 +162,13 @@ const Store=(()=>{
         fuenteEntradas="vista";return filas;
       }catch(err){
         if(fuenteEntradas==="vista")throw err;      // la vista existe pero ha fallado
-        fuenteEntradas="tabla";                     // todavía no está: seguimos como antes
-        console.info("EnSu: sin vista pública de entradas, se usa la tabla.");
+        // Solo se da por ausente si Supabase dice que no existe. Un fallo de red
+        // no debe condenar la sesión a leer la tabla con las fechas completas.
+        const m=`${(err&&err.message)||""} ${(err&&err.code)||""}`;
+        if(/42P01|does not exist|Could not find the table|PGRST205/i.test(m)){
+          fuenteEntradas="tabla";
+          console.info("EnSu: sin vista pública de entradas, se usa la tabla.");
+        }else throw err;
       }
     }
     return ok(await sb.from("entradas").select("*").order("id"));
@@ -915,6 +920,16 @@ function cerrarModal(id){
   if(p&&document.contains(p)&&!modalAbierto())try{p.focus();}catch(_){}
 }
 function modalAbierto(){return $$(".modal-overlay.open").pop();}
+/* Cierra solo lo de más arriba. Vive aparte porque las teclas pulsadas DENTRO
+   del libro no llegan al documento: epub.js las reenvía y hay que poder
+   llamar a esto también desde ahí. */
+function cerrarCapaSuperior(){
+  const m=modalAbierto();
+  if(m){cerrarModal(m.id);return true;}
+  if($("lector-panel").classList.contains("abierto")){cerrarLector();return true;}
+  if(App.leerId!=null){cerrarLeer();return true;}
+  return false;
+}
 /* ¿Hay algo abierto por encima de este elemento? (modal, lector o ficha) */
 function hayCapaEncima(el){
   const capas=[modalAbierto(),$("lector-panel").classList.contains("abierto")?$("lector-panel"):null,
@@ -1854,7 +1869,7 @@ function abrirFoto(url){
    nunca hacia atrás, para no pisar lo que avanzaste en el Kindle. */
 const EPUB_JS=["https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
                "https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"];
-const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100,turno:0,visita:false,
+const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100,turno:0,visita:false,pctVisita:null,
   inter:1.75,ancho:"normal",fuente:"serif",tema:""};
 const FONDOS={claro:{bg:"#F7F4EF",fg:"#1A1714"},sepia:{bg:"#F3E9D8",fg:"#3A2F22"},oscuro:{bg:"#0E0E10",fg:"#EDE8E1"}};
 const ANCHOS={estrecho:820,normal:1180,ancho:1500};
@@ -1936,6 +1951,7 @@ async function abrirLector(id,cfiDestino){
   if(!e||!e.ebookRuta)return;
   Lector.id=e.id;Lector.cfi=cfiDestino||e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;Lector.selDescartada="";
   Lector.visita=!!cfiDestino;            // vienes a ver una marca, no a seguir leyendo
+  Lector.pctVisita=null;
   $("lector-aviso").hidden=true;         // el aviso de progreso es de cada libro
   $("lector-q").value="";                // y la búsqueda también
   $("lector-q-res").innerHTML="";
@@ -2010,13 +2026,16 @@ async function mostrarEpub(datos,e){
   rend.on("relocated",loc=>{
     Lector.cfi=loc.start.cfi;
     if(loc.start.percentage)Lector.pct=Math.round(loc.start.percentage*100);
-    if(Lector.visita&&Lector.pct>=(e.progreso||0))Lector.visita=false;   // ya sigues leyendo
+    // Se deja de considerar visita solo cuando pasas de donde estaba la marca,
+    // es decir cuando de verdad has seguido leyendo desde ahí.
+    if(Lector.visita&&Lector.pctVisita!=null&&Lector.pct>Lector.pctVisita+1)Lector.visita=false;
+    if(Lector.visita&&Lector.pctVisita==null)Lector.pctVisita=Lector.pct;
     $("lector-pct").textContent=`${Lector.pct}%`;
     $("lector-barra").style.width=`${Lector.pct}%`;
     clearTimeout(Lector.guardando);
     Lector.guardando=setTimeout(guardarPosicion,4000);
   });
-  rend.on("keyup",ev=>teclasLector(ev));
+  rend.on("keyup",ev=>{if(ev.key==="Escape"){cerrarCapaSuperior();return;}teclasLector(ev);});
   rend.on("markClicked",()=>abrirMarcas());
   rend.getContents().forEach(engancharSeleccion);   // por si ya había algo pintado
   vigilarSeleccion(true);
@@ -2088,10 +2107,10 @@ function teclasLector(ev){
 /* Guarda por dónde vas; el progreso solo sube, nunca baja */
 async function guardarPosicion(){
   const e=visibles().find(x=>x.id===Lector.id);
-  if(!e||!Store.isAdmin())return;
+  if(!e||!Store.isAdmin())return true;   // no hay nada que guardar: no es un fallo
   const campos={};
   if(Lector.cfi&&Lector.cfi!==e.ebookCfi&&!Lector.visita)campos.ebookCfi=Lector.cfi;
-  if(Lector.pct>(e.progreso||0)){
+  if(Lector.pct>(e.progreso||0)&&!Lector.visita){
     campos.progreso=Lector.pct;
     if(e.paginasTotal)campos.paginaActual=Math.round(Lector.pct/100*e.paginasTotal);
     if(e.estado!=="leyendo"&&e.estado!=="terminado")campos.estado="leyendo";
@@ -2100,7 +2119,13 @@ async function guardarPosicion(){
   try{await Store.actualizarCampos(Lector.id,campos);Lector.fallo="";return true;}
   catch(err){Lector.fallo=errTxt(err);return false;}
 }
+let cerrandoLector=false;
 async function cerrarLector(){
+  if(cerrandoLector)return;              // la segunda pulsación no cuenta
+  cerrandoLector=true;
+  try{await cerrarLectorAhora();}finally{cerrandoLector=false;}
+}
+async function cerrarLectorAhora(){
   Lector.turno++;                        // lo que estuviera cargando ya no vale
   clearTimeout(Lector.guardando);
   vigilarSeleccion(false);
@@ -2287,7 +2312,8 @@ async function crearMarca(tipo,nota,selDada){
   if(!cfi){toast("No hay nada marcado.","error");return;}
   if(marcasDe(Lector.id).some(m=>m.tipo===tipo&&m.cfi===cfi)){
     toast(tipo==="marcador"?"Esta página ya estaba marcada.":"Ya tenías marcado ese texto.");
-    cerrarSeleccion(true);return;
+    if(tipo!=="marcador")cerrarSeleccion(true);   // un marcador no toca lo que tengas seleccionado
+    return;
   }
   const texto=tipo==="marcador"?`Al ${Lector.pct||0}% del libro`:(sel?sel.texto:"");
   creandoMarca=true;
@@ -2644,13 +2670,7 @@ document.addEventListener("click",ev=>{
 document.addEventListener("keydown",ev=>{
   const escribiendo=/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName);
   if(((ev.key==="/"&&!escribiendo)||((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==="k"))&&!modalAbierto()){ev.preventDefault();abrirBuscar();return;}
-  if(ev.key==="Escape"){
-    const m=modalAbierto();
-    if(m){cerrarModal(m.id);return;}
-    if($("lector-panel").classList.contains("abierto")){cerrarLector();return;}
-    if(App.leerId!=null)cerrarLeer();
-    return;
-  }
+  if(ev.key==="Escape"){cerrarCapaSuperior();return;}
   if(ev.key==="Tab")atraparFoco(ev);
   // Una tarjeta enfocada detrás de un panel no debe poder reactivarse a ciegas
   if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches("[data-act][tabindex]")&&!hayCapaEncima(ev.target)){
@@ -2676,6 +2696,8 @@ function initEventos(){
     if(!$("lector-panel").classList.contains("abierto"))return;
     if(modalAbierto())return;        // hay una capa por encima: no es para el libro
     if(escribiendoEn(e.target))return;
+    // Sobre un botón o un enlace la tecla es suya: el espacio lo activa
+    if(e.target.closest&&e.target.closest('button,a[href],summary,[role="button"]'))return;
     teclasLector(e);
   });
   const zona=$("take-img");
