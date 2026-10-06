@@ -203,9 +203,17 @@ const Store=(()=>{
   /* Tiempo real: ante cualquier cambio se recarga la tabla afectada (son pocos datos). */
   const timers={};
   const recargar=(k,f)=>{clearTimeout(timers[k]);timers[k]=setTimeout(f,120);};
+  let canalActual=null;
   function suscribir(){
-    sb.channel("ensu")
-      .on("postgres_changes",{event:"*",schema:"public",table:"entradas"},()=>recargar("e",cargarEntradas))
+    // Al entrar o salir cambia lo que se puede escuchar, así que el canal se rehace
+    if(canalActual){try{sb.removeChannel(canalActual);}catch(_){}}
+    const canal=sb.channel("ensu");
+    canalActual=canal;
+    // La tabla "entradas" solo la puede escuchar quien puede leerla: desde
+    // 14_fechas_privadas.sql, el visitante no. Si se suscribiera igual, el
+    // error se llevaría por delante el resto de avisos del mismo canal.
+    if(admin)canal.on("postgres_changes",{event:"*",schema:"public",table:"entradas"},()=>recargar("e",cargarEntradas));
+    canal
       .on("postgres_changes",{event:"*",schema:"public",table:"notas_privadas"},()=>recargar("p",cargarPrivado))
       .on("postgres_changes",{event:"*",schema:"public",table:"tareas"},()=>recargar("p",cargarPrivado))
       .on("postgres_changes",{event:"*",schema:"public",table:"lecturas_progreso"},()=>recargar("p",cargarPrivado))
@@ -218,7 +226,7 @@ const Store=(()=>{
     let es=false;
     if(session){try{es=!!ok(await sb.rpc("es_autor"));}catch(_){es=false;}}
     const cambio=es!==admin;admin=es;
-    if(cambio){await Promise.all([cargarEntradas(),cargarPrivado()]);authSubs.forEach(f=>f(admin));}
+    if(cambio){suscribir();await Promise.all([cargarEntradas(),cargarPrivado()]);authSubs.forEach(f=>f(admin));}
     return es;
   }
 
@@ -1085,13 +1093,21 @@ async function eliminarEntrada(id){
     : `¿Eliminar «${titulo(e)}»? Esta acción no se puede deshacer.`;
   if(!confirm(aviso))return;
   try{
-    // Primero los ficheros: si la fila se va antes, se quedan huérfanos sin dueño
-    if(e.ebookRuta){
-      if(e.ebookPublico)await Store.dejarDeCompartir(e.ebookRuta).catch(err=>console.warn("EnSu descarga:",err&&err.message));
-      await Store.borrarEbook(e.ebookRuta).catch(err=>console.warn("EnSu ebook:",err&&err.message));
+    // 1) Lo que está a la vista de todos, primero. Si esto falla, no se toca nada
+    //    más: vale más una entrada de sobra que un archivo colgado en internet.
+    if(e.ebookRuta&&e.ebookPublico){
+      try{await Store.dejarDeCompartir(e.ebookRuta);}
+      catch(err){toast(`No se ha borrado nada: antes hay que retirar la copia descargable y no se ha podido (${errTxt(err)}).`,"error");return;}
     }
+    // 2) La fila, que es lo que pediste
     await Store.eliminarEntrada(e.id);
-    toast("Entrada eliminada.");
+    // 3) Y el archivo privado. Si queda suelto se dice, en vez de callarlo.
+    let suelto=false;
+    if(e.ebookRuta){
+      try{await Store.borrarEbook(e.ebookRuta);}
+      catch(err){suelto=true;console.warn("EnSu ebook:",err&&err.message);}
+    }
+    toast(suelto?"Entrada eliminada, pero su archivo sigue en el almacén. Bórralo desde Supabase.":"Entrada eliminada.",suelto?"error":undefined);
     if(App.leerId!=null&&String(App.leerId)===String(e.id))cerrarLeer();
     cerrarModal("form-overlay");
   }catch(err){toast(errTxt(err),"error");}
@@ -2193,7 +2209,7 @@ async function pdfMarcas(id){
     img.addEventListener("error",()=>{img.remove();r();},{once:true});
     setTimeout(r,3500);
   });
-  if(img&&img.complete&&!img.naturalWidth)img.remove();   // llegó rota: fuera el hueco
+  if(img&&!img.naturalWidth)img.remove();   // rota o demasiado lenta: fuera el hueco
   const antes=document.title;
   document.title=`${titulo(e)} — subrayados`;   // el navegador lo usa de nombre del PDF
   const b=document.body,fijo={position:b.style.position,top:b.style.top,left:b.style.left,right:b.style.right};
@@ -2230,6 +2246,9 @@ function exportarMarcas(id){
 const marcasDe=id=>Store.marcas().filter(m=>m.entradaId===Number(id));
 function pintarUna(m){
   if(!Lector.rend||m.tipo==="marcador")return;
+  // epub.js guarda los resaltados por posición: pintar dos veces el mismo trozo
+  // deja uno huérfano que no se va al borrar su marca.
+  try{Lector.rend.annotations.remove(m.cfi,"highlight");}catch(_){}
   try{Lector.rend.annotations.highlight(m.cfi,{id:m.id},()=>abrirMarcas(),"hl-ensu",
     {fill:"#C4A97D","fill-opacity":m.tipo==="nota"?"0.42":"0.26"});}catch(_){}
 }
@@ -2310,7 +2329,8 @@ async function crearMarca(tipo,nota,selDada){
   const sel=selDada||Lector.sel;
   const cfi=tipo==="marcador"?Lector.cfi:(sel&&sel.cfi);
   if(!cfi){toast("No hay nada marcado.","error");return;}
-  if(marcasDe(Lector.id).some(m=>m.tipo===tipo&&m.cfi===cfi)){
+// Una nota escrita no se tira nunca: lo que has tecleado manda.
+  if(tipo!=="nota"&&marcasDe(Lector.id).some(m=>m.tipo===tipo&&m.cfi===cfi)){
     toast(tipo==="marcador"?"Esta página ya estaba marcada.":"Ya tenías marcado ese texto.");
     if(tipo!=="marcador")cerrarSeleccion(true);   // un marcador no toca lo que tengas seleccionado
     return;
@@ -2433,7 +2453,11 @@ async function borrarMarca(id){
   try{
     const m=Store.marcas().find(x=>x.id===Number(id));
     await Store.borrarMarca(Number(id));
-    if(m&&Lector.rend&&m.tipo!=="marcador"){try{Lector.rend.annotations.remove(m.cfi,"highlight");}catch(_){}}
+    if(m&&Lector.rend&&m.tipo!=="marcador"){
+      try{Lector.rend.annotations.remove(m.cfi,"highlight");}catch(_){}
+      // Si quedaba otra marca sobre el mismo texto, su resaltado se fue con la otra
+      marcasDe(Lector.id).filter(x=>x.cfi===m.cfi).forEach(pintarUna);
+    }
     listarMarcas();
   }catch(err){toast(errTxt(err),"error");}
 }
@@ -2491,8 +2515,13 @@ async function subirEbook(file){
       await Store.borrarEbook(previa.ebookRuta).catch(err=>console.warn("EnSu ebook:",err&&err.message));
       if(previa.ebookPublico){
         try{await Store.compartirEbook(datos.ruta);}
-        catch(err){await Store.actualizarCampos(Lector.subiendoId,{ebookPublico:false});
-          toast("Subido, pero la descarga pública se ha desactivado. Vuelve a activarla.","error");}
+        catch(err){
+          await Store.actualizarCampos(Lector.subiendoId,{ebookPublico:false});
+          renderLeer();
+          // Este aviso es el último: si no, lo tapa el «Libro subido» de abajo
+          toast("Subido, pero la descarga pública se ha desactivado. Vuelve a activarla desde la ficha.","error");
+          return;
+        }
       }
     }
     toast("Libro subido. Ya puedes leerlo.");

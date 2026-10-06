@@ -69,8 +69,13 @@ async function comprobarAutor(token) {
 // Llama a Gemini probando modelos hasta que uno responde JSON interpretable.
 // Devuelve {salida, modelo} o {fallo:{code,error}}.
 async function pedirJson(cuerpo) {
-  let ultimo = "", agotado = false, sinPermiso = false;
+  let ultimo = "", agotado = false, sinPermiso = false, intentos = 0;
+  // Cada intento vuelve a subir el cuerpo entero (una imagen puede pesar MB),
+  // así que no se recorre la lista entera: con tres basta para sortear un
+  // modelo caído, y si el problema es de la cuenta fallarán los tres igual.
+  const MAX_INTENTOS = 3;
   for (const modelo of await modelosDisponibles()) {
+    if (++intentos > MAX_INTENTOS) break;
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
