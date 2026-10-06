@@ -1861,7 +1861,7 @@ async function abrirLector(id,cfiDestino){
   const e=visibles().find(x=>String(x.id)===String(id));
   if(!e||!e.ebookRuta)return;
   Lector.id=e.id;Lector.cfi=cfiDestino||e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;
-  $("lector-marcas").hidden=true;Lector.pestana="indice";cerrarSeleccion();
+  $("lector-marcas").hidden=true;Lector.pestana="indice";cerrarSeleccion(true);
   Lector.tam=Number(localStorage.getItem("ensu-lector-tam"))||100;
   leerOpciones();
   $("lector-ops").hidden=true;
@@ -1913,6 +1913,8 @@ async function mostrarEpub(datos,e){
   const rend=libro.renderTo("lector-hoja",{width:"100%",height:"100%",flow:"paginated",
     spread:doble?"auto":"none",minSpreadWidth:1000,gap:doble?64:24,allowScriptedContent:false});
   Lector.rend=rend;
+  // Antes de pintar nada: si no, la primera página se queda sin vigilar la selección
+  rend.hooks.content.register(contents=>engancharSeleccion(contents));
   aplicarTemaLector();
   const aTiempo=await Promise.race([
     rend.display(Lector.cfi||undefined).then(()=>true).catch(()=>false),
@@ -1929,10 +1931,10 @@ async function mostrarEpub(datos,e){
     Lector.guardando=setTimeout(guardarPosicion,4000);
   });
   rend.on("keyup",ev=>teclasLector(ev));
-  rend.on("selected",cfiRange=>alSeleccionar(cfiRange));
   rend.on("markClicked",()=>abrirMarcas());
+  rend.getContents().forEach(engancharSeleccion);   // por si ya había algo pintado
   libro.loaded.navigation.then(()=>{if(!$("lector-marcas").hidden&&Lector.pestana==="indice")listarIndice();}).catch(()=>{});
-  rend.on("relocated",()=>{cerrarSeleccion();marcarCapitulo();});
+  rend.on("relocated",()=>{if(!haySeleccionViva()&&!$("lector-sel").hidden)cerrarSeleccion();marcarCapitulo();});
   pintarMarcas();
   aplicarOpciones(false);
   // El porcentaje exacto necesita un índice; se calcula en segundo plano y se guarda en este navegador
@@ -2102,22 +2104,48 @@ function pintarUna(m){
     {fill:"#C4A97D","fill-opacity":m.tipo==="nota"?"0.42":"0.26"});}catch(_){}
 }
 function pintarMarcas(){if(Lector.rend)marcasDe(Lector.id).forEach(pintarUna);}
-function textoSeleccion(cfiRange){
-  return Lector.libro.getRange(cfiRange).then(r=>r?String(r).trim():"").catch(()=>"");
+function mostrarBarraSeleccion(){
+  if(!Lector.sel)return;
+  const t=Lector.sel.texto;
+  $("lector-sel-txt").textContent=t.slice(0,160)+(t.length>160?"…":"");
+  $("lector-sel").hidden=false;
 }
-async function alSeleccionar(cfiRange){
-  Lector.sel={cfi:cfiRange,texto:await textoSeleccion(cfiRange)};
-  const b=$("lector-sel");
-  $("lector-sel-txt").textContent=Lector.sel.texto.slice(0,160)+(Lector.sel.texto.length>160?"…":"");
-  b.hidden=false;
+/* Mira si hay algo seleccionado dentro del libro y lo recoge. Se llama al
+   levantar el dedo o el ratón, y también cuando cambia la selección: en el
+   móvil el texto se ajusta con las asas y hay que volver a leerlo. */
+function revisarSeleccion(contents){
+  try{
+    const sel=contents.window.getSelection();
+    if(!sel||sel.rangeCount!==1||sel.isCollapsed)return;
+    const rango=sel.getRangeAt(0),texto=String(rango).trim();
+    if(texto.length<2)return;
+    const cfi=contents.cfiFromRange(rango);
+    if(!cfi)return;
+    Lector.sel={cfi,texto};
+    mostrarBarraSeleccion();
+  }catch(_){}
+}
+function engancharSeleccion(contents){
+  const doc=contents.document;
+  const pedir=espera=>{clearTimeout(Lector.selT);Lector.selT=setTimeout(()=>revisarSeleccion(contents),espera);};
+  doc.addEventListener("touchend",()=>pedir(140),{passive:true});
+  doc.addEventListener("mouseup",()=>pedir(60));
+  doc.addEventListener("selectionchange",()=>pedir(320));
 }
 document.addEventListener("mousedown",ev=>{
   const o=$("lector-ops");
   if(o&&!o.hidden&&!o.contains(ev.target)&&!ev.target.closest('[data-act="lector-ops"]'))o.hidden=true;
 });
-function cerrarSeleccion(){
+function cerrarSeleccion(soltar){
+  clearTimeout(Lector.selT);
   $("lector-sel").hidden=true;Lector.sel=null;
-  if(Lector.rend)try{Lector.rend.getContents().forEach(c=>c.window.getSelection().removeAllRanges());}catch(_){}
+  if(soltar&&Lector.rend)try{Lector.rend.getContents().forEach(c=>c.window.getSelection().removeAllRanges());}catch(_){}
+}
+/* ¿Hay texto marcado ahora mismo dentro del libro? */
+function haySeleccionViva(){
+  if(!Lector.rend)return false;
+  try{return Lector.rend.getContents().some(c=>{const s=c.window.getSelection();return s&&s.rangeCount&&!s.isCollapsed;});}
+  catch(_){return false;}
 }
 async function crearMarca(tipo,nota){
   const sel=Lector.sel;
@@ -2126,7 +2154,7 @@ async function crearMarca(tipo,nota){
   const texto=tipo==="marcador"?`Al ${Lector.pct||0}% del libro`:(sel?sel.texto:"");
   try{
     const nueva=await Store.guardarMarca({entradaId:Lector.id,tipo,cfi,texto,nota:nota||""});
-    cerrarSeleccion();
+    cerrarSeleccion(true);
     pintarUna({id:nueva&&nueva.id,cfi,tipo});
     toast(tipo==="marcador"?"Página marcada.":tipo==="nota"?"Nota guardada.":"Subrayado guardado.");
     if(!$("lector-marcas").hidden)listarMarcas();
@@ -2396,8 +2424,10 @@ const ACCIONES={
   "marca-subrayar":()=>crearMarca("subrayado"),
   "marca-nota":()=>pedirNota(),
   "marca-guardar-nota":()=>guardarNotaMarca(),
-  "marca-copiar":()=>{const t=Lector.sel&&Lector.sel.texto;if(t)navigator.clipboard.writeText(t).then(()=>{toast("Texto copiado.");cerrarSeleccion();});},
-  "marca-cerrar":()=>cerrarSeleccion(),
+  "marca-copiar":()=>{const t=Lector.sel&&Lector.sel.texto;if(!t)return;
+    navigator.clipboard.writeText(t).then(()=>{toast("Texto copiado.");cerrarSeleccion(true);})
+      .catch(()=>toast("Tu navegador no ha dejado copiar.","error"));},
+  "marca-cerrar":()=>cerrarSeleccion(true),
   "marcador":()=>crearMarca("marcador"),
   "marcas-abrir":()=>{const p=$("lector-marcas");p.hidden=!p.hidden;if(!p.hidden)cambiarPestana(Lector.pestana||"indice");recolocarLibro();},
   "lector-tab":v=>cambiarPestana(v),

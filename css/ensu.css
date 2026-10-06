@@ -942,6 +942,9 @@ html.dark .marca-tipo{color:var(--accent)}
 .nota-marca-sel{font-family:var(--serif);font-size:16px;font-style:italic;color:var(--text2);border-left:3px solid var(--accent);padding-left:12px;margin-bottom:14px}
 @media(max-width:899px){
   .lector-hoja{padding:8px 18px 12px}
+  .lector-sel{bottom:8px;width:calc(100vw - 16px);padding:12px 14px}
+  .lector-sel-txt{-webkit-line-clamp:2;margin-bottom:8px}
+  .lector-sel-acts .chip-btn{height:34px;flex:1;justify-content:center}
   .lector-marcas{position:absolute;inset:0;width:auto;border-left:none;z-index:6}
 }
 
