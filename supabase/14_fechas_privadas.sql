@@ -1,3 +1,8 @@
+-- ⚠️  ESTE FICHERO TIENE UN FALLO: la vista se crea con `security_invoker = on`,
+--     y eso hace que leerla exija el mismo permiso que acabamos de quitar.
+--     EJECUTA DESPUÉS 15_arreglo_vista_publica.sql, que la rehace bien.
+--     (Se deja aquí tal cual para que quede constancia de lo que se ejecutó.)
+
 -- ════════════════════════════════════════════════════════════
 -- EnSu · Que el día y el mes no salgan de casa
 -- Pegar en Supabase → SQL Editor → Run. No borra ni cambia ningún dato.
