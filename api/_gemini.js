@@ -69,7 +69,7 @@ async function comprobarAutor(token) {
 // Llama a Gemini probando modelos hasta que uno responde JSON interpretable.
 // Devuelve {salida, modelo} o {fallo:{code,error}}.
 async function pedirJson(cuerpo) {
-  let ultimo = "";
+  let ultimo = "", agotado = false, sinPermiso = false;
   for (const modelo of await modelosDisponibles()) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`, {
       method: "POST",
@@ -77,17 +77,23 @@ async function pedirJson(cuerpo) {
       body: JSON.stringify(cuerpo)
     });
     if (r.status === 404) { ultimo = `modelo ${modelo} no disponible`; continue; }
-    const data = await r.json();
+    // Puede llegar HTML en un corte de Google: leer el cuerpo nunca debe reventar
+    let data = null;
+    try { data = await r.json(); } catch (_) { data = null; }
     if (!r.ok) {
       const msg = (data && data.error && data.error.message) || `error ${r.status}`;
-      if (/API key|permission|PERMISSION_DENIED/i.test(msg)) return { fallo: { code: 500, error: "La clave de Gemini no es válida o no tiene permisos." } };
-      if (r.status === 429) return { fallo: { code: 429, error: "Has llegado al límite de Gemini por ahora. Inténtalo en unos minutos." } };
+      // El agotamiento o el veto son de ESTE modelo: se prueba con el siguiente,
+      // y solo si fallan todos se le cuenta al usuario qué pasó.
+      if (/API key|permission|PERMISSION_DENIED/i.test(msg)) { sinPermiso = true; ultimo = msg; continue; }
+      if (r.status === 429) { agotado = true; ultimo = msg; continue; }
       ultimo = msg; continue;
     }
-    const texto = (((data.candidates || [])[0] || {}).content || {}).parts?.map(p => p.text).join("") || "";
+    const texto = (((data || {}).candidates || [])[0] || {}).content?.parts?.map(p => p.text).join("") || "";
     try { return { salida: JSON.parse(texto.replace(/^```(?:json)?|```$/g, "").trim()), modelo }; }
     catch (_) { ultimo = "respuesta no interpretable"; }
   }
+  if (agotado) return { fallo: { code: 429, error: "Has llegado al límite de Gemini por ahora. Inténtalo en unos minutos." } };
+  if (sinPermiso) return { fallo: { code: 500, error: "La clave de Gemini no es válida o no tiene permisos." } };
   return { fallo: { code: 502, error: `Gemini no respondió correctamente (${ultimo}).` } };
 }
 

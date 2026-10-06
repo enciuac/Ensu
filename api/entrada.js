@@ -8,6 +8,12 @@ const SUPABASE_KEY = "sb_publishable_Ze4N3Wl2SyqnBmEtRlcO-A_M1drZqmX";
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const corta = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s; };
+// Lee como un visitante cualquiera: usa la vista pública cuando existe
+// —solo lleva el año— y cae a la tabla si todavía no está creada.
+const entradasPub = async resto => {
+  try { return await consulta(`entradas_publicas?${resto}`); }
+  catch (_) { return await consulta(`entradas?${resto}`); }
+};
 const consulta = async q => {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${q}`, { headers: { apikey: SUPABASE_KEY } });
   if (!r.ok) throw new Error("supabase " + r.status);
@@ -28,7 +34,7 @@ module.exports = async (req, res) => {
     if (/^\d+$/.test(q.id || "")) {
       destino = `${base}/#/leer/${q.id}`;
       url = `${base}/e/${q.id}`;
-      const [e] = await consulta(`entradas?id=eq.${q.id}&select=tipo,libro,autor,titulo_ref,reflexion,portada,portada_id`);
+      const [e] = await entradasPub(`id=eq.${q.id}&select=tipo,libro,autor,titulo_ref,reflexion,portada,portada_id`);
       if (e) {
         titulo = e.tipo === "reflexion" ? (e.titulo_ref || e.libro) : `${e.libro}${e.autor ? ` — ${e.autor}` : ""}`;
         desc = corta(e.titulo_ref && e.tipo !== "reflexion" ? e.titulo_ref : e.reflexion, 190) || desc;
@@ -50,7 +56,7 @@ module.exports = async (req, res) => {
       const y = q.anio;
       destino = `${base}/#/resumen/${y}`;
       url = `${base}/r/${y}`;
-      const filas = await consulta(`entradas?select=*`);
+      const filas = await entradasPub(`select=*`);
       const n = filas.filter(e => e.tipo === "libro" && e.estado === "terminado" && String(e.terminado_en || e.fecha || "").startsWith(y)).length;
       titulo = `Mi ${y} en libros`;
       desc = `${n} ${n === 1 ? "libro leído" : "libros leídos"} en ${y}: mi estantería, favoritos y las ideas que más se repitieron.`;

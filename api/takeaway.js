@@ -19,6 +19,9 @@ module.exports = async (req, res) => {
   // Diagnóstico: qué modelos ve la función (no consume cuota de generación)
   if (req.method === "GET") {
     if (!process.env.GEMINI_API_KEY) return json(res, 500, { error: "Falta la clave GEMINI_API_KEY en Vercel." }, origen);
+    // Es diagnóstico, pero consume cuota de Google: solo para el autor
+    const malo = await comprobarAutor(String(req.headers.authorization || "").replace(/^Bearer\s+/i, ""));
+    if (malo) return json(res, malo.code, { error: malo.error }, origen);
     const lista = await modelosDisponibles();
     return json(res, 200, { usara: lista[0], candidatos: lista.slice(0, 8) }, origen);
   }

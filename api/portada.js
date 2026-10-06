@@ -7,7 +7,9 @@ const SUPABASE_URL = "https://wgtolhgtdpxasliaaxaa.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Ze4N3Wl2SyqnBmEtRlcO-A_M1drZqmX";
 const ORIGENES = ["https://ensu-eight.vercel.app", "http://localhost:8080", "http://127.0.0.1:8080"];
 const EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif" };
-const MAX = 8 * 1024 * 1024;
+// El bucket "portadas" tiene el tope en 3 MB (supabase/03_mejoras.sql): de nada
+// sirve descargar más, porque la subida lo rechazaría al final del camino.
+const MAX = 3 * 1024 * 1024;
 
 const json = (res, code, cuerpo, origen) => {
   if (origen) res.setHeader("Access-Control-Allow-Origin", origen);
@@ -60,7 +62,7 @@ module.exports = async (req, res) => {
     if (!EXT[mime]) return json(res, 415, { error: `Eso no es una imagen admitida (${mime || "sin tipo"}).` }, origen);
     const buf = Buffer.from(await img.arrayBuffer());
     if (!buf.length) return json(res, 502, { error: "La imagen llegó vacía." }, origen);
-    if (buf.length > MAX) return json(res, 413, { error: "La imagen pesa más de 8 MB." }, origen);
+    if (buf.length > MAX) return json(res, 413, { error: `La portada pesa ${(buf.length / 1048576).toFixed(1)} MB y el máximo son 3 MB. Busca una más pequeña o súbela desde la ficha.` }, origen);
     datos = buf;
   } catch (err) {
     return json(res, 502, { error: "No se pudo descargar la imagen (el enlace puede estar roto)." }, origen);

@@ -4,11 +4,14 @@
    - Portadas: caché primero (no cambian).
    Nunca se cachean notas privadas, tareas ni historial. Al cerrar sesión la web
    borra la caché de datos ("ensu-datos"). */
-const VERSION = "ensu-web-v12";
+const VERSION = "ensu-web-v13";
 const DATOS = "ensu-datos";
 const PORTADAS = "ensu-portadas";
-const SHELL = ["./", "index.html", "css/ensu.css", "js/ensu.js", "manifest.webmanifest",
-  "img/icon.svg?v=2", "img/icon-192.png", "img/icon-512.png", "img/favicon-32.png", "img/apple-touch-icon.png"];
+// Las direcciones van EXACTAMENTE como las pide index.html, con su ?v=2:
+// caches.match compara también la query, y sin ella estas copias no se usarían.
+const SHELL = ["./", "index.html", "css/ensu.css", "js/ensu.js", "manifest.webmanifest?v=2",
+  "img/icon.svg?v=2", "img/icon-192.png?v=2", "img/icon-512.png?v=2",
+  "img/favicon-32.png?v=2", "img/apple-touch-icon.png?v=2"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -34,7 +37,16 @@ const cachePrimero = async (req, cache) => {
   const c = await caches.match(req);
   if (c) return c;
   const r = await fetch(req);
-  if (r.ok || r.type === "opaque") (await caches.open(cache)).put(req, r.clone());
+  // Solo se guarda lo que de verdad vino bien. Una respuesta opaca no dice si
+  // fue un 200 o un 404, así que se vuelve a pedir en modo cors para saberlo:
+  // si tampoco se puede, se deja pasar sin guardar antes que fijar un error.
+  if (r.ok) (await caches.open(cache)).put(req, r.clone());
+  else if (r.type === "opaque") {
+    try {
+      const prueba = await fetch(req.url, { mode: "cors", credentials: "omit" });
+      if (prueba.ok) (await caches.open(cache)).put(req, r.clone());
+    } catch (_) { /* no se puede comprobar: mejor no guardar nada */ }
+  }
   return r;
 };
 const cacheYActualiza = async (req, cache) => {

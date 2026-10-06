@@ -41,7 +41,12 @@ function hoyISO(){const d=new Date();return`${d.getFullYear()}-${String(d.getMon
 function fechaLarga(iso){if(!iso)return"";const[y,m,d]=iso.split("-");if(!m)return y;return`${+d} ${MESES_C[+m-1]} ${y}`;}
 /* Fecha pública = solo el año. El autor ve la fecha completa. */
 function fechaUI(iso){if(!iso)return"";return Store.isAdmin()?fechaLarga(iso):iso.slice(0,4);}
-function fechaNum(e){return e.fecha?Date.parse(e.fecha)||0:0;}
+/* Al visitante no le llega la fecha, sino su posición en la línea de tiempo:
+   ordena exactamente igual y no dice ningún día. */
+function fechaNum(e){
+  if(e.ordenFecha!=null)return e.ordenFecha;
+  return e.fecha?Date.parse(e.fecha)||0:0;
+}
 /* Texto enriquecido: párrafos por doble salto. Si un párrafo empieza con una línea
    corta sin punto final, se muestra como subtítulo (útil para notas por puntos). */
 function txRich(str){
@@ -92,7 +97,10 @@ const Store=(()=>{
     const r={};for(const k in r0)r[k]=typeof r0[k]==="string"?r0[k].replace(/\r\n?/g,"\n"):r0[k];
     const n={
       id:Number(r.id),tipo:TIPOS[r.tipo]?r.tipo:"libro",estado:ESTADOS[r.estado]?r.estado:"terminado",
-      libro:r.libro||"",autor:r.autor||"",fecha:r.fecha||"",tituloRef:r.titulo_ref||"",
+      libro:r.libro||"",autor:r.autor||"",
+      fecha:r.fecha||(r.anio?`${r.anio}-01-01`:""),
+      ordenFecha:r.orden_fecha==null?null:Number(r.orden_fecha),
+      tituloRef:r.titulo_ref||"",
       reflexion:r.reflexion||"",cita:r.cita||"",vida:r.vida||"",tension:r.tension||"",
       finalidad:r.finalidad||"",categoria:r.categoria||"",dificultad:r.dificultad||"",
       tags:Array.isArray(r.tags)?r.tags.filter(Boolean):[],
@@ -105,7 +113,7 @@ const Store=(()=>{
       takeawayIdea:r.takeaway_idea||"",takeawayFrase:r.takeaway_frase||"",takeawayImg:r.takeaway_img||"",
       ebookRuta:r.ebook_ruta||"",ebookNombre:r.ebook_nombre||"",ebookTipo:r.ebook_tipo||"",ebookCfi:r.ebook_cfi||"",
       ebookPublico:!!r.ebook_publico,
-      terminadoEn:r.terminado_en||""
+      terminadoEn:r.terminado_en||(r.anio_fin?`${r.anio_fin}-01-01`:"")
     };
     return n;
   }
@@ -142,9 +150,27 @@ const Store=(()=>{
     return ok(await fn(datos));
   }
 
+  let fuenteEntradas="";
+  /* El autor lee la tabla entera. Quien no ha entrado lee la vista, que solo
+     lleva el año. Si la vista no está creada, se usa la tabla como siempre:
+     así el SQL se puede ejecutar antes, después o nunca sin romper nada. */
+  async function leerEntradas(){
+    if(admin)return ok(await sb.from("entradas").select("*").order("id"));
+    if(fuenteEntradas!=="tabla"){
+      try{
+        const filas=ok(await sb.from("entradas_publicas").select("*").order("id"));
+        fuenteEntradas="vista";return filas;
+      }catch(err){
+        if(fuenteEntradas==="vista")throw err;      // la vista existe pero ha fallado
+        fuenteEntradas="tabla";                     // todavía no está: seguimos como antes
+        console.info("EnSu: sin vista pública de entradas, se usa la tabla.");
+      }
+    }
+    return ok(await sb.from("entradas").select("*").order("id"));
+  }
   async function cargarEntradas(){
     try{
-      const filas=ok(await sb.from("entradas").select("*").order("id"));
+      const filas=await leerEntradas();
       const firma=JSON.stringify(filas);
       if(firma===firmaEntradas&&cargado&&!errorCarga)return;
       firmaEntradas=firma;
@@ -183,6 +209,7 @@ const Store=(()=>{
       .subscribe();
   }
   async function comprobarAutor(session){
+    fuenteEntradas="";firmaEntradas="";   // cambia quién pregunta, cambia la fuente
     let es=false;
     if(session){try{es=!!ok(await sb.rpc("es_autor"));}catch(_){es=false;}}
     const cambio=es!==admin;admin=es;
@@ -332,7 +359,12 @@ const Portadas=(()=>{
   /* Open Library: primero título + apellido; si no hay nada, solo título.
      Luego se miran las ediciones de las 2 obras más probables (ahí están las
      portadas en español) y se prioriza la que tenga exactamente el mismo título. */
-  const apellido=a=>{const p=String(a||"").replace(/(.*?)/g,"").replace(/s(y|&|and)s.*$/i,"").trim().split(/s+/);return p[p.length-1]||"";};
+  const apellido=a=>{
+    const p=String(a||"").replace(/\([^)]*\)/g,"")        // quita los paréntesis
+      .replace(/\s(y|&|and)\s.*$/i,"")                    // corta en el segundo autor
+      .trim().split(/\s+/);
+    return p[p.length-1]||"";
+  };
   async function olBuscar(q){
     const r=await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8&fields=key,title,cover_i,language`);
     if(!r.ok)throw new Error("ol");return(await r.json()).docs||[];
@@ -852,7 +884,11 @@ async function guardarProgresoRapido(id,terminar){
     if(!Number.isFinite(v)||v<0){toast("Introduce un número válido.","error");return;}
     if(e.paginasTotal){const pa=Math.min(v,e.paginasTotal);c.paginaActual=pa;c.progreso=Math.round(pa/e.paginasTotal*100);}
     else c.progreso=Math.min(100,v);
-    if(c.progreso>=100){await Store.actualizarCampos(e.id,{...c,estado:e.estado});abrirFin(e.id);return;}
+    if(c.progreso>=100){
+      try{await Store.actualizarCampos(e.id,{...c,estado:e.estado});abrirFin(e.id);}
+      catch(err){toast(errTxt(err),"error");}
+      return;
+    }
     else if(c.progreso>0&&POR_LEER.has(e.estado))c.estado="leyendo";
   }
   try{await Store.actualizarCampos(e.id,c);document.activeElement&&document.activeElement.blur();toast(c.estado==="terminado"?"¡Libro terminado! 🎉":"Progreso guardado.");renderLeer();}
@@ -879,6 +915,14 @@ function cerrarModal(id){
   if(p&&document.contains(p)&&!modalAbierto())try{p.focus();}catch(_){}
 }
 function modalAbierto(){return $$(".modal-overlay.open").pop();}
+/* ¿Hay algo abierto por encima de este elemento? (modal, lector o ficha) */
+function hayCapaEncima(el){
+  const capas=[modalAbierto(),$("lector-panel").classList.contains("abierto")?$("lector-panel"):null,
+    App.leerId!=null?$("leer-panel"):null].filter(Boolean);
+  return capas.some(c=>!c.contains(el));
+}
+/* Mientras escribes, las teclas son tuyas */
+const escribiendoEn=el=>!!el&&(el.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 const ENFOCABLES='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 /* Con un modal abierto, el tabulador da vueltas dentro de él */
 function atraparFoco(ev){
@@ -1021,8 +1065,16 @@ async function guardarForm(ev){
 }
 async function eliminarEntrada(id){
   const e=visibles().find(x=>String(x.id)===String(id));if(!e)return;
-  if(!confirm(`¿Eliminar «${titulo(e)}»? Esta acción no se puede deshacer.`))return;
+  const aviso=e.ebookRuta
+    ? `¿Eliminar «${titulo(e)}»?\n\nSe borrará también su archivo${e.ebookPublico?" y la copia que la gente puede descargar":""}. Esta acción no se puede deshacer.`
+    : `¿Eliminar «${titulo(e)}»? Esta acción no se puede deshacer.`;
+  if(!confirm(aviso))return;
   try{
+    // Primero los ficheros: si la fila se va antes, se quedan huérfanos sin dueño
+    if(e.ebookRuta){
+      if(e.ebookPublico)await Store.dejarDeCompartir(e.ebookRuta).catch(err=>console.warn("EnSu descarga:",err&&err.message));
+      await Store.borrarEbook(e.ebookRuta).catch(err=>console.warn("EnSu ebook:",err&&err.message));
+    }
     await Store.eliminarEntrada(e.id);
     toast("Entrada eliminada.");
     if(App.leerId!=null&&String(App.leerId)===String(e.id))cerrarLeer();
@@ -1031,9 +1083,12 @@ async function eliminarEntrada(id){
 }
 /* Borrador local (solo entradas nuevas) */
 const DRAFT="ensu-borrador";
-function guardarBorrador(){if(Form.id!=null)return;const d={};CAMPOS.forEach(k=>{const el=fEl(k);if(el)d[k]=el.value;});try{localStorage.setItem(DRAFT,JSON.stringify(d));}catch(_){}}
+/* Las notas privadas no se guardan en el borrador: ese texto se queda en el
+   navegador aunque cierres sesión, y no es sitio para lo delicado. */
+const CAMPOS_BORRADOR=()=>CAMPOS.filter(k=>k!=="notas");
+function guardarBorrador(){if(Form.id!=null)return;const d={};CAMPOS_BORRADOR().forEach(k=>{const el=fEl(k);if(el)d[k]=el.value;});try{localStorage.setItem(DRAFT,JSON.stringify(d));}catch(_){}}
 function cargarBorrador(){try{const d=JSON.parse(localStorage.getItem(DRAFT)||"null");return d&&(d.libro||d.reflexion||d.tituloRef)?d:null;}catch(_){return null;}}
-function restaurarBorrador(){const d=cargarBorrador();if(!d)return;CAMPOS.forEach(k=>{const el=fEl(k);if(el&&d[k]!=null)el.value=d[k];});syncTipo();syncProgreso();actualizarPreviewPortada();$("draft-banner").hidden=true;}
+function restaurarBorrador(){const d=cargarBorrador();if(!d)return;CAMPOS_BORRADOR().forEach(k=>{const el=fEl(k);if(el&&d[k]!=null)el.value=d[k];});syncTipo();syncProgreso();actualizarPreviewPortada();$("draft-banner").hidden=true;}
 function borrarBorrador(){try{localStorage.removeItem(DRAFT);}catch(_){}$("draft-banner").hidden=true;}
 
 /* ══ LOGIN ══ */
@@ -1072,7 +1127,13 @@ async function guardarNuevaPwd(){
   catch(_){er.textContent="No se pudo cambiar. Pide un enlace nuevo.";er.classList.add("visible");}
   finally{btn.disabled=false;}
 }
-async function hacerLogout(){await Store.logout();cerrarModal("login-overlay");cerrarModal("mas-overlay");toast("Sesión cerrada.");if(App.vista==="tareas")ir("#/");}
+async function hacerLogout(){
+  await Store.logout();
+  borrarBorrador();                      // el borrador es tuyo, no del navegador
+  cerrarModal("login-overlay");cerrarModal("mas-overlay");
+  toast("Sesión cerrada.");
+  if(App.vista==="tareas")ir("#/");
+}
 
 /* ══ TAREAS ══ */
 function renderTareas(){
@@ -1454,7 +1515,7 @@ function moverBuscar(d){
   if(!Buscar.res.length)return;
   Buscar.sel=(Buscar.sel+d+Buscar.res.length)%Buscar.res.length;
   $$(".buscar-item").forEach((el,i)=>el.classList.toggle("sel",i===Buscar.sel));
-  const el=$(".buscar-item")[Buscar.sel];if(el)el.scrollIntoView({block:"nearest"});
+  const el=$$(".buscar-item")[Buscar.sel];if(el)el.scrollIntoView({block:"nearest"});
 }
 function irABuscado(id){
   cerrarModal("buscar-overlay");
@@ -1501,13 +1562,17 @@ const API_SUGERIR=()=>esLocal()?"https://ensu-eight.vercel.app/api/sugerir":"/ap
 /* Una portada "prestada" es la que vive en el servidor de otro: hoy está y
    mañana puede no estar. Las nuestras van al almacén de EnSu. */
 const portadaPrestada=e=>!!e.portada&&/^https?:\/\//i.test(e.portada)&&!/\/storage\/v1\/object\/public\/portadas\//.test(e.portada);
+/* El rescate automático no debe repetirse con una portada que ya es nuestra */
 async function traerPortada(id,url){
   const token=await Store.token();
   const r=await fetch(API_PORTADA(),{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({id,url})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||"No se pudo guardar la portada.");
-  if(!d.yaEstaba)await Store.actualizarCampos(id,{portada:d.url});
-  return d.url;
+  // La marca al final obliga al navegador a volver a pedirla: si no, con la misma
+  // ruta seguiría enseñando la portada anterior (se guardan con caché de un año).
+  const urlFinal=d.yaEstaba?d.url:`${d.url}${d.url.includes("?")?"&":"?"}v=${(d.bytes||0)}`;
+  if(!d.yaEstaba)await Store.actualizarCampos(id,{portada:urlFinal});
+  return urlFinal;
 }
 /* En segundo plano, sin molestar: si falla, la portada de fuera sigue valiendo */
 function traerPortadaEnSilencio(e){
@@ -1518,17 +1583,19 @@ function traerPortadaEnSilencio(e){
 /* Lo que se manda es solo lo que ya es público en la web: cómo has clasificado
    tus libros. Ni notas privadas, ni reflexiones, ni citas, ni "cómo lo aplico". */
 function perfilLector(){
+  // Lo privado no sale de casa, ni siquiera como etiqueta suelta
+  const publicas=visibles().filter(e=>e.tipo!=="privado");
   const conteo={};
-  visibles().forEach(e=>e.tags.forEach(t=>{conteo[t]=(conteo[t]||0)+1;}));
-  const ejemplos=visibles()
+  publicas.forEach(e=>e.tags.forEach(t=>{conteo[t]=(conteo[t]||0)+1;}));
+  const ejemplos=publicas
     .filter(e=>e.tipo==="libro"&&(e.categoria||e.dificultad||e.tags.length))
     .sort((a,b)=>fechaNum(b)-fechaNum(a)).slice(0,30)
     .map(e=>({libro:e.libro,autor:e.autor,categoria:e.categoria,finalidad:e.finalidad,
       dificultad:e.dificultad,paginas:e.paginasTotal||0,tags:e.tags.slice(0,6)}));
   return{
-    finalidades:opcionesDe("finalidad",FINALIDADES),
-    categorias:opcionesDe("categoria",CATEGORIAS),
-    dificultades:opcionesDe("dificultad",DIFICULTADES),
+    finalidades:FINALIDADES,
+    categorias:[...new Set([...CATEGORIAS,...publicas.map(e=>e.categoria).filter(Boolean)])],
+    dificultades:DIFICULTADES,
     etiquetas:Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,45).map(([t,n])=>`${t} (${n})`),
     ejemplos
   };
@@ -1657,7 +1724,7 @@ function takeawaysHTML(e){
 /* Cerradas por defecto para el autor, que ya sabe qué hay dentro.
    Al visitante se le abre el resumen: si no, la ficha parece vacía. */
 const SECCIONES_ABIERTAS=[];
-const SECCIONES_VISITA=["resumen"];
+const SECCIONES_VISITA=["resumen","teoria"];   // el artículo la llama «Teoría»
 let _secs=null;
 function secsGuardadas(){
   if(_secs)return _secs;
@@ -1787,7 +1854,7 @@ function abrirFoto(url){
    nunca hacia atrás, para no pisar lo que avanzaste en el Kindle. */
 const EPUB_JS=["https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
                "https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"];
-const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100,
+const Lector={id:null,libro:null,rend:null,pct:0,cfi:"",guardando:null,tam:100,turno:0,visita:false,
   inter:1.75,ancho:"normal",fuente:"serif",tema:""};
 const FONDOS={claro:{bg:"#F7F4EF",fg:"#1A1714"},sepia:{bg:"#F3E9D8",fg:"#3A2F22"},oscuro:{bg:"#0E0E10",fg:"#EDE8E1"}};
 const ANCHOS={estrecho:820,normal:1180,ancho:1500};
@@ -1849,30 +1916,45 @@ function renderLector(){
     :`<div class="empty-state">${icon("i-book")}<p>${admin?"Todavía no has subido ningún libro.":"Todavía no hay libros para descargar."}</p>${admin?`<p class="form-hint" style="margin-top:8px">Abre un libro de tu biblioteca y súbelo desde su ficha.</p>`:""}</div>`;
 }
 
+const scriptsPedidos=new Map();
 function cargarScript(src){
-  return new Promise((ok,mal)=>{
-    if([...document.scripts].some(s=>s.src===src))return ok();
-    const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>mal(new Error("No se pudo cargar el lector."));
+  // Se guarda la promesa: el segundo que lo pida espera al primero en vez de
+  // dar por hecho que ya está listo solo porque la etiqueta existe.
+  if(scriptsPedidos.has(src))return scriptsPedidos.get(src);
+  const p=new Promise((ok,mal)=>{
+    const s=document.createElement("script");s.src=src;
+    s.onload=ok;
+    s.onerror=()=>{scriptsPedidos.delete(src);mal(new Error("No se pudo cargar el lector."));};
     document.head.appendChild(s);
   });
+  scriptsPedidos.set(src,p);
+  return p;
 }
 
 async function abrirLector(id,cfiDestino){
   const e=visibles().find(x=>String(x.id)===String(id));
   if(!e||!e.ebookRuta)return;
   Lector.id=e.id;Lector.cfi=cfiDestino||e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;Lector.selDescartada="";
+  Lector.visita=!!cfiDestino;            // vienes a ver una marca, no a seguir leyendo
+  $("lector-aviso").hidden=true;         // el aviso de progreso es de cada libro
+  $("lector-q").value="";                // y la búsqueda también
+  $("lector-q-res").innerHTML="";
+  clearTimeout(buscaLibroT);buscaLibroN++;
   $("lector-marcas").hidden=true;Lector.pestana="indice";cerrarSeleccion(true);
   Lector.tam=Number(localStorage.getItem("ensu-lector-tam"))||100;
   leerOpciones();
   $("lector-ops").hidden=true;
   $("lector-titulo").textContent=e.libro||titulo(e);
   $("lector-cont").innerHTML=`<p class="lector-cargando">Abriendo el libro…</p>`;
+  const yaAbierto=$("lector-panel").classList.contains("abierto");
   $("lector-panel").classList.add("abierto");
   requestAnimationFrame(()=>$("lector-panel").classList.add("open"));
-  bloquearScroll(true);
+  if(!yaAbierto)bloquearScroll(true);   // una apertura, un bloqueo
+  const turno=++Lector.turno;
   $("lector-epub").hidden=e.ebookTipo!=="epub";
   try{
     const url=await Store.urlEbook(e.ebookRuta);
+    if(turno!==Lector.turno)return;
     if(e.ebookTipo==="pdf"){
       $("lector-cont").innerHTML=`<iframe class="lector-pdf" src="${esc(url)}#view=FitH" title="${esc(e.libro)}"></iframe>`;
       $("lector-pie").hidden=true;
@@ -1885,10 +1967,13 @@ async function abrirLector(id,cfiDestino){
     const datos=await resp.arrayBuffer();
     if(!datos.byteLength)throw new Error("El archivo está vacío.");
     if(tieneDRM(datos))throw new Error("Este EPUB tiene protección anticopia (DRM) y no se puede leer en el navegador. Puedes descargarlo y abrirlo en tu lector habitual.");
+    if(turno!==Lector.turno)return;        // lo cerraste mientras descargaba
     avisoLector("Preparando la lectura…");
     for(const src of EPUB_JS)await cargarScript(src);
+    if(turno!==Lector.turno)return;
     await mostrarEpub(datos,e);
   }catch(err){
+    if(turno!==Lector.turno)return;
     const msg=err&&err.message?err.message:"No se pudo abrir el libro.";
     $("lector-cont").innerHTML=`<div class="lector-cargando"><p>${esc(msg)}</p>
       <p style="margin-top:14px"><button class="btn-sm" data-act="bajar-ebook" data-v="${e.id}">Descargar el archivo</button></p></div>`;
@@ -1925,6 +2010,7 @@ async function mostrarEpub(datos,e){
   rend.on("relocated",loc=>{
     Lector.cfi=loc.start.cfi;
     if(loc.start.percentage)Lector.pct=Math.round(loc.start.percentage*100);
+    if(Lector.visita&&Lector.pct>=(e.progreso||0))Lector.visita=false;   // ya sigues leyendo
     $("lector-pct").textContent=`${Lector.pct}%`;
     $("lector-barra").style.width=`${Lector.pct}%`;
     clearTimeout(Lector.guardando);
@@ -1962,6 +2048,7 @@ async function mostrarEpub(datos,e){
 
 async function saltarA(pct){
   if(!Lector.libro||!Lector.rend)return;
+  Lector.visita=false;                   // vuelves a tu sitio a propósito
   try{
     const cfi=Lector.libro.locations.cfiFromPercentage(Math.min(99,Number(pct))/100);
     if(cfi)await Lector.rend.display(cfi);
@@ -1994,36 +2081,39 @@ function aplicarTemaLector(){
 }
 function teclasLector(ev){
   const k=ev.key;
-  if(k==="ArrowRight"||k==="PageDown"||k===" ")pasarPagina(1);
-  else if(k==="ArrowLeft"||k==="PageUp")pasarPagina(-1);
-  else if(k==="Escape")cerrarLector();
+  // El Escape lo lleva el manejador por capas; aquí duplicaría el cierre
+  if(k==="ArrowRight"||k==="PageDown"||k===" "){ev.preventDefault();pasarPagina(1);}
+  else if(k==="ArrowLeft"||k==="PageUp"){ev.preventDefault();pasarPagina(-1);}
 }
 /* Guarda por dónde vas; el progreso solo sube, nunca baja */
 async function guardarPosicion(){
   const e=visibles().find(x=>x.id===Lector.id);
   if(!e||!Store.isAdmin())return;
   const campos={};
-  if(Lector.cfi&&Lector.cfi!==e.ebookCfi)campos.ebookCfi=Lector.cfi;
+  if(Lector.cfi&&Lector.cfi!==e.ebookCfi&&!Lector.visita)campos.ebookCfi=Lector.cfi;
   if(Lector.pct>(e.progreso||0)){
     campos.progreso=Lector.pct;
     if(e.paginasTotal)campos.paginaActual=Math.round(Lector.pct/100*e.paginasTotal);
     if(e.estado!=="leyendo"&&e.estado!=="terminado")campos.estado="leyendo";
   }
-  if(!Object.keys(campos).length)return;
-  try{await Store.actualizarCampos(Lector.id,campos);}catch(_){}
+  if(!Object.keys(campos).length)return true;
+  try{await Store.actualizarCampos(Lector.id,campos);Lector.fallo="";return true;}
+  catch(err){Lector.fallo=errTxt(err);return false;}
 }
 async function cerrarLector(){
+  Lector.turno++;                        // lo que estuviera cargando ya no vale
   clearTimeout(Lector.guardando);
   vigilarSeleccion(false);
   cerrarSeleccion();
   const antes=(visibles().find(x=>x.id===Lector.id)||{}).progreso||0;
-  await guardarPosicion();
+  const guardado=await guardarPosicion();
   const panel=$("lector-panel");
   panel.classList.remove("open");
   setTimeout(()=>{panel.classList.remove("abierto");$("lector-cont").innerHTML="";},250);
   bloquearScroll(false);
   if(Lector.rend){try{Lector.rend.destroy();}catch(_){}Lector.rend=null;Lector.libro=null;}
-  if(Lector.pct>antes)toast(`Progreso actualizado al ${Lector.pct}%.`);
+  if(!guardado)toast(`No se pudo guardar tu avance: ${Lector.fallo||"sin conexión"}. Vuelve a abrir el libro con conexión.`,"error");
+  else if(Lector.pct>antes)toast(`Progreso actualizado al ${Lector.pct}%.`);
   renderVista();
 }
 
@@ -2073,10 +2163,18 @@ async function pdfMarcas(id){
     <footer class="imp-pie">EnSu · Lo que leo me forma · ${new Date().getFullYear()}</footer>`;
   // Sin esperar a la portada saldría un hueco en blanco en la primera página
   const img=hoja.querySelector("img");
-  if(img&&!img.complete)await new Promise(r=>{img.onload=img.onerror=r;setTimeout(r,3500);});
+  if(img&&!img.complete)await new Promise(r=>{
+    img.addEventListener("load",r,{once:true});
+    img.addEventListener("error",()=>{img.remove();r();},{once:true});
+    setTimeout(r,3500);
+  });
+  if(img&&img.complete&&!img.naturalWidth)img.remove();   // llegó rota: fuera el hueco
   const antes=document.title;
   document.title=`${titulo(e)} — subrayados`;   // el navegador lo usa de nombre del PDF
-  window.print();
+  const b=document.body,fijo={position:b.style.position,top:b.style.top,left:b.style.left,right:b.style.right};
+  b.style.position="";b.style.top="";b.style.left="";b.style.right="";
+  try{window.print();}
+  finally{b.style.position=fijo.position;b.style.top=fijo.top;b.style.left=fijo.left;b.style.right=fijo.right;}
   setTimeout(()=>{document.title=antes;hoja.innerHTML="";},1200);
 }
 
@@ -2111,8 +2209,18 @@ function pintarUna(m){
     {fill:"#C4A97D","fill-opacity":m.tipo==="nota"?"0.42":"0.26"});}catch(_){}
 }
 function pintarMarcas(){if(Lector.rend)marcasDe(Lector.id).forEach(pintarUna);}
+/* Para que la barra de selección y el panel de opciones no tapen nada, se les
+   dice cuánto ocupan el pie y el aviso, que cambian de alto según el momento. */
+function medirLector(){
+  const p=$("lector-panel"),pie=$("lector-pie"),aviso=$("lector-aviso"),nav=p.querySelector(".lector-nav");
+  const altoPie=pie&&!pie.hidden?pie.offsetHeight:0;
+  const altoNav=(nav?nav.offsetHeight:56)+(aviso&&!aviso.hidden?aviso.offsetHeight:0);
+  p.style.setProperty("--alto-pie",altoPie+"px");
+  p.style.setProperty("--bajo-barra",(altoNav+4)+"px");
+}
 function mostrarBarraSeleccion(){
   if(!Lector.sel)return;
+  medirLector();
   const t=Lector.sel.texto;
   $("lector-sel-txt").textContent=t.slice(0,160)+(t.length>160?"…":"");
   $("lector-sel").hidden=false;
@@ -2144,6 +2252,8 @@ function engancharSeleccion(contents){
 /* Mira todas las páginas pintadas; da igual quién avisara */
 function revisarTodo(){
   if(!Lector.rend)return;
+  // Al soltar el texto se olvida lo descartado: así puedes volver a marcar lo mismo
+  if(Lector.selDescartada&&!haySeleccionViva())Lector.selDescartada="";
   try{Lector.rend.getContents().forEach(revisarSeleccion);}catch(_){}
 }
 /* Red de seguridad: Safari puede no disparar ninguno de los eventos de arriba
@@ -2169,11 +2279,19 @@ function haySeleccionViva(){
   try{return Lector.rend.getContents().some(c=>{const s=c.window.getSelection();return s&&s.rangeCount&&!s.isCollapsed;});}
   catch(_){return false;}
 }
-async function crearMarca(tipo,nota){
-  const sel=Lector.sel;
+let creandoMarca=false;
+async function crearMarca(tipo,nota,selDada){
+  if(creandoMarca)return;                // el segundo toque no cuenta
+  const sel=selDada||Lector.sel;
   const cfi=tipo==="marcador"?Lector.cfi:(sel&&sel.cfi);
-  if(!cfi)return;
+  if(!cfi){toast("No hay nada marcado.","error");return;}
+  if(marcasDe(Lector.id).some(m=>m.tipo===tipo&&m.cfi===cfi)){
+    toast(tipo==="marcador"?"Esta página ya estaba marcada.":"Ya tenías marcado ese texto.");
+    cerrarSeleccion(true);return;
+  }
   const texto=tipo==="marcador"?`Al ${Lector.pct||0}% del libro`:(sel?sel.texto:"");
+  creandoMarca=true;
+  $$('[data-act="marca-subrayar"],[data-act="marca-nota"],[data-act="marcador"]').forEach(b=>b.disabled=true);
   try{
     const nueva=await Store.guardarMarca({entradaId:Lector.id,tipo,cfi,texto,nota:nota||""});
     cerrarSeleccion(true);
@@ -2181,19 +2299,28 @@ async function crearMarca(tipo,nota){
     toast(tipo==="marcador"?"Página marcada.":tipo==="nota"?"Nota guardada.":"Subrayado guardado.");
     if(!$("lector-marcas").hidden)listarMarcas();
   }catch(err){toast(/relation|marcas/i.test(`${err&&err.message}`)?"Falta ejecutar supabase/12_marcas.sql.":errTxt(err),"error");}
+  finally{
+    creandoMarca=false;
+    $$('[data-act="marca-subrayar"],[data-act="marca-nota"],[data-act="marcador"]').forEach(b=>b.disabled=false);
+  }
 }
 function pedirNota(){
   const sel=Lector.sel;
+  if(!sel){toast("Vuelve a marcar el texto que quieres anotar.","error");return;}
+  Lector.selNota={cfi:sel.cfi,texto:sel.texto};   // guardada aquí: ya no se puede perder
   $("nota-marca-txt").value="";
-  $("nota-marca-sel").textContent=sel?sel.texto.slice(0,200):"";
+  $("nota-marca-sel").textContent=sel.texto.slice(0,200);
   abrirModal("nota-marca-overlay");
   setTimeout(()=>$("nota-marca-txt").focus(),80);
 }
 async function guardarNotaMarca(){
   const nota=$("nota-marca-txt").value.trim();
   if(!nota){$("nota-marca-txt").focus();return;}
+  const sel=Lector.selNota;
+  if(!sel){toast("Se ha perdido el texto marcado. Vuelve a marcarlo.","error");return;}
   cerrarModal("nota-marca-overlay");
-  await crearMarca("nota",nota);
+  await crearMarca("nota",nota,sel);
+  Lector.selNota=null;
 }
 function abrirMarcas(){$("lector-marcas").hidden=false;cambiarPestana("marcas");recolocarLibro();}
 function cambiarPestana(cual){
@@ -2328,8 +2455,20 @@ async function subirEbook(file){
   if(file.size>60*1024*1024){toast("El archivo supera los 60 MB.","error");return;}
   toast("Subiendo el libro…");
   try{
+    const previa=visibles().find(x=>x.id===Lector.subiendoId)||{};
     const datos=await Store.subirEbook(file,Lector.subiendoId,ext);
     await Store.actualizarCampos(Lector.subiendoId,{ebookRuta:datos.ruta,ebookNombre:file.name,ebookTipo:ext,ebookCfi:""});
+    // El archivo anterior ya no sirve: fuera del almacén y, si estaba compartido,
+    // fuera también de las descargas, y se comparte el nuevo en su lugar.
+    if(previa.ebookRuta&&previa.ebookRuta!==datos.ruta){
+      if(previa.ebookPublico)await Store.dejarDeCompartir(previa.ebookRuta).catch(err=>console.warn("EnSu descarga:",err&&err.message));
+      await Store.borrarEbook(previa.ebookRuta).catch(err=>console.warn("EnSu ebook:",err&&err.message));
+      if(previa.ebookPublico){
+        try{await Store.compartirEbook(datos.ruta);}
+        catch(err){await Store.actualizarCampos(Lector.subiendoId,{ebookPublico:false});
+          toast("Subido, pero la descarga pública se ha desactivado. Vuelve a activarla.","error");}
+      }
+    }
     toast("Libro subido. Ya puedes leerlo.");
     renderLeer();
   }catch(err){toast(errSubida(err),"error");}
@@ -2437,7 +2576,7 @@ const ACCIONES={
   "lector-next":()=>pasarPagina(1),
   "lector-mas":()=>tamanoLector(10),
   "lector-menos":()=>tamanoLector(-10),
-  "lector-ops":()=>{const o=$("lector-ops");o.hidden=!o.hidden;if(!o.hidden)aplicarOpciones(false);},
+  "lector-ops":()=>{const o=$("lector-ops");medirLector();o.hidden=!o.hidden;if(!o.hidden)aplicarOpciones(false);},
   "lector-inter":v=>{Lector.inter=Math.min(2.4,Math.max(1.3,+(Lector.inter+Number(v)*0.1).toFixed(2)));aplicarOpciones(true);},
   "lector-ancho":v=>{Lector.ancho=v;aplicarOpciones(true);},
   "lector-fuente":v=>{Lector.fuente=v;aplicarOpciones(true);},
@@ -2513,7 +2652,10 @@ document.addEventListener("keydown",ev=>{
     return;
   }
   if(ev.key==="Tab")atraparFoco(ev);
-  if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches("[data-act][tabindex]")){ev.preventDefault();ev.target.click();}
+  // Una tarjeta enfocada detrás de un panel no debe poder reactivarse a ciegas
+  if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches("[data-act][tabindex]")&&!hayCapaEncima(ev.target)){
+    ev.preventDefault();ev.target.click();
+  }
 });
 /* Cerrar modal al pulsar fuera */
 document.addEventListener("mousedown",ev=>{if(ev.target.classList&&ev.target.classList.contains("modal-overlay"))cerrarModal(ev.target.id);});
@@ -2530,7 +2672,12 @@ function initEventos(){
   fEl("portada-file").addEventListener("change",e=>subirPortada(e.target.files[0]));
   $("take-file").addEventListener("change",e=>subirImagenTake(e.target.files[0]));
   $("ebook-file").addEventListener("change",e=>subirEbook(e.target.files[0]));
-  document.addEventListener("keydown",e=>{if($("lector-panel").classList.contains("abierto"))teclasLector(e);});
+  document.addEventListener("keydown",e=>{
+    if(!$("lector-panel").classList.contains("abierto"))return;
+    if(modalAbierto())return;        // hay una capa por encima: no es para el libro
+    if(escribiendoEn(e.target))return;
+    teclasLector(e);
+  });
   const zona=$("take-img");
   ["dragenter","dragover"].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.add("soltar");}));
   ["dragleave","drop"].forEach(ev=>zona.addEventListener(ev,e=>{e.preventDefault();zona.classList.remove("soltar");}));
