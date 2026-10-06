@@ -1860,7 +1860,7 @@ function cargarScript(src){
 async function abrirLector(id,cfiDestino){
   const e=visibles().find(x=>String(x.id)===String(id));
   if(!e||!e.ebookRuta)return;
-  Lector.id=e.id;Lector.cfi=cfiDestino||e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;
+  Lector.id=e.id;Lector.cfi=cfiDestino||e.ebookCfi;Lector.pct=e.progreso||0;Lector.sel=null;Lector.selDescartada="";
   $("lector-marcas").hidden=true;Lector.pestana="indice";cerrarSeleccion(true);
   Lector.tam=Number(localStorage.getItem("ensu-lector-tam"))||100;
   leerOpciones();
@@ -1933,6 +1933,10 @@ async function mostrarEpub(datos,e){
   rend.on("keyup",ev=>teclasLector(ev));
   rend.on("markClicked",()=>abrirMarcas());
   rend.getContents().forEach(engancharSeleccion);   // por si ya había algo pintado
+  vigilarSeleccion(true);
+  // Safari a veces entrega el final del gesto a la página de fuera, no al libro
+  document.addEventListener("selectionchange",revisarTodo);
+  document.addEventListener("touchend",revisarTodo,{passive:true});
   libro.loaded.navigation.then(()=>{if(!$("lector-marcas").hidden&&Lector.pestana==="indice")listarIndice();}).catch(()=>{});
   rend.on("relocated",()=>{if(!haySeleccionViva()&&!$("lector-sel").hidden)cerrarSeleccion();marcarCapitulo();});
   pintarMarcas();
@@ -1980,6 +1984,7 @@ function aplicarTemaLector(){
     "p":{"margin":"0 0 1em","text-indent":"1.2em"},
     "h1, h2, h3":{"text-align":"left","line-height":"1.25"},
     "img":{"max-width":"100%","height":"auto"},
+    "html, body":{"-webkit-user-select":"text","user-select":"text","-webkit-touch-callout":"default"},
     "a":{color:oscuro?"#C4A97D":"#9C7F4C"},
     "blockquote":{"border-left":"3px solid rgba(196,169,125,.6)","padding-left":"1em","margin":"1.2em 0","font-style":"italic"},
     "::selection":{background:"rgba(196,169,125,.35)"}
@@ -2009,6 +2014,8 @@ async function guardarPosicion(){
 }
 async function cerrarLector(){
   clearTimeout(Lector.guardando);
+  vigilarSeleccion(false);
+  cerrarSeleccion();
   const antes=(visibles().find(x=>x.id===Lector.id)||{}).progreso||0;
   await guardarPosicion();
   const panel=$("lector-panel");
@@ -2121,6 +2128,8 @@ function revisarSeleccion(contents){
     if(texto.length<2)return;
     const cfi=contents.cfiFromRange(rango);
     if(!cfi)return;
+    if(cfi===Lector.selDescartada)return;   // lo cerraste tú: no insistir
+    if(Lector.sel&&Lector.sel.cfi===cfi&&Lector.sel.texto===texto)return;
     Lector.sel={cfi,texto};
     mostrarBarraSeleccion();
   }catch(_){}
@@ -2132,12 +2141,25 @@ function engancharSeleccion(contents){
   doc.addEventListener("mouseup",()=>pedir(60));
   doc.addEventListener("selectionchange",()=>pedir(320));
 }
+/* Mira todas las páginas pintadas; da igual quién avisara */
+function revisarTodo(){
+  if(!Lector.rend)return;
+  try{Lector.rend.getContents().forEach(revisarSeleccion);}catch(_){}
+}
+/* Red de seguridad: Safari puede no disparar ninguno de los eventos de arriba
+   mientras tienes el dedo puesto, así que se comprueba a intervalos. */
+function vigilarSeleccion(on){
+  clearInterval(Lector.vigia);
+  if(!on)return;
+  Lector.vigia=setInterval(revisarTodo,450);
+}
 document.addEventListener("mousedown",ev=>{
   const o=$("lector-ops");
   if(o&&!o.hidden&&!o.contains(ev.target)&&!ev.target.closest('[data-act="lector-ops"]'))o.hidden=true;
 });
 function cerrarSeleccion(soltar){
   clearTimeout(Lector.selT);
+  if(soltar&&Lector.sel)Lector.selDescartada=Lector.sel.cfi;
   $("lector-sel").hidden=true;Lector.sel=null;
   if(soltar&&Lector.rend)try{Lector.rend.getContents().forEach(c=>c.window.getSelection().removeAllRanges());}catch(_){}
 }
