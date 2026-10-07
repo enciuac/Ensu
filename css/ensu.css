@@ -952,7 +952,11 @@ html.dark .marca-tipo{color:var(--accent)}
 
 .lector-cont iframe.lector-pdf{width:100%;height:100%;border:none;background:var(--surface2)}
 .lector-cargando{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px}
-.lector-pie{display:flex;align-items:center;gap:14px;padding:10px 20px max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--borde);flex-shrink:0}
+.lector-pie{display:flex;flex-direction:column;gap:6px;padding:8px 20px max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--borde);flex-shrink:0}
+.lector-pie-fila{display:flex;align-items:center;gap:14px}
+/* Lo que falta para acabar el capítulo: discreto, que no compita con el libro */
+.lector-cap{font-size:11.5px;color:var(--muted);text-align:center;letter-spacing:.01em;line-height:1.3}
+.lector-cap[hidden]{display:none}
 .lector-progreso{flex:1;height:5px;background:var(--surface2);border-radius:5px;overflow:hidden}
 .lector-barra{height:100%;width:0;background:var(--accent);border-radius:5px;transition:width .3s}
 .lector-pct{font-size:12.5px;font-weight:600;color:var(--text2);min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
@@ -960,7 +964,9 @@ html.dark .marca-tipo{color:var(--accent)}
   .lec-grid{grid-template-columns:1fr}
   .lector-nav{padding:0 12px;gap:8px}
   .lector-titulo{font-size:15px}
-  .lector-pie{gap:10px;padding:8px 12px max(10px,env(safe-area-inset-bottom))}
+  .lector-pie{gap:5px;padding:7px 12px max(10px,env(safe-area-inset-bottom))}
+  .lector-pie-fila{gap:10px}
+  .lector-cap{font-size:11px}
 }
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

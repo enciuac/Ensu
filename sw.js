@@ -4,7 +4,7 @@
    - Portadas: caché primero (no cambian).
    Nunca se cachean notas privadas, tareas ni historial. Al cerrar sesión la web
    borra la caché de datos ("ensu-datos"). */
-const VERSION = "ensu-web-v16";
+const VERSION = "ensu-web-v17";
 const DATOS = "ensu-datos";
 const PORTADAS = "ensu-portadas";
 // Las direcciones van EXACTAMENTE como las pide index.html, con su ?v=2:

@@ -1969,6 +1969,7 @@ async function abrirLector(id,cfiDestino){
   Lector.visita=!!cfiDestino;            // vienes a ver una marca, no a seguir leyendo
   Lector.pctVisita=null;
   $("lector-aviso").hidden=true;         // el aviso de progreso es de cada libro
+  $("lector-cap").hidden=true;           // la cuenta es de cada libro
   $("lector-q").value="";                // y la búsqueda también
   $("lector-q-res").innerHTML="";
   clearTimeout(buscaLibroT);buscaLibroN++;
@@ -2048,6 +2049,7 @@ async function mostrarEpub(datos,e){
     if(Lector.visita&&Lector.pctVisita==null)Lector.pctVisita=Lector.pct;
     $("lector-pct").textContent=`${Lector.pct}%`;
     $("lector-barra").style.width=`${Lector.pct}%`;
+    actualizarCapitulo(loc);
     clearTimeout(Lector.guardando);
     Lector.guardando=setTimeout(guardarPosicion,4000);
   });
@@ -2255,6 +2257,19 @@ function pintarUna(m){
 function pintarMarcas(){if(Lector.rend)marcasDe(Lector.id).forEach(pintarUna);}
 /* Para que la barra de selección y el panel de opciones no tapen nada, se les
    dice cuánto ocupan el pie y el aviso, que cambian de alto según el momento. */
+/* Lo que queda para acabar el capítulo. En doble página se mira la hoja de la
+   derecha, que es la última que estás viendo. */
+function actualizarCapitulo(loc){
+  const el=$("lector-cap");
+  if(!el)return;
+  const d=((loc&&(loc.end||loc.start))||{}).displayed;
+  if(!d||!d.total||!d.page){el.hidden=true;return;}
+  const quedan=Math.max(0,d.total-d.page);
+  el.textContent=quedan===0?"Última página del capítulo"
+    :quedan===1?"Queda 1 página para acabar el capítulo"
+    :`Quedan ${quedan} páginas para acabar el capítulo`;
+  el.hidden=false;
+}
 function medirLector(){
   const p=$("lector-panel"),pie=$("lector-pie"),aviso=$("lector-aviso"),nav=p.querySelector(".lector-nav");
   const altoPie=pie&&!pie.hidden?pie.offsetHeight:0;
@@ -2465,7 +2480,11 @@ function irAMarca(cfi){if(Lector.rend)Lector.rend.display(cfi);}
 /* El panel lateral le quita sitio al libro: hay que repaginar */
 function recolocarLibro(){
   if(!Lector.rend)return;
-  setTimeout(()=>{try{Lector.rend.resize();}catch(_){}},60);
+  setTimeout(()=>{
+    try{Lector.rend.resize();}catch(_){}
+    // Con otro ancho o otra letra, el capítulo tiene otro número de páginas
+    try{actualizarCapitulo(Lector.rend.currentLocation());}catch(_){}
+  },60);
 }
 
 /* ── Subir el archivo desde la ficha del libro ── */

@@ -531,10 +531,13 @@ if(d){document.documentElement.classList.add("dark");var m=document.querySelecto
     </div>
   </div>
   <div class="lector-pie" id="lector-pie">
-    <button class="btn-icon" data-act="lector-prev" aria-label="Página anterior"><svg class="i"><use href="#i-arrow-l"/></svg></button>
-    <div class="lector-progreso"><div class="lector-barra" id="lector-barra"></div></div>
-    <span class="lector-pct" id="lector-pct">0%</span>
-    <button class="btn-icon" data-act="lector-next" aria-label="Página siguiente"><svg class="i"><use href="#i-arrow-r"/></svg></button>
+    <p class="lector-cap" id="lector-cap" role="status" hidden></p>
+    <div class="lector-pie-fila">
+      <button class="btn-icon" data-act="lector-prev" aria-label="Página anterior"><svg class="i"><use href="#i-arrow-l"/></svg></button>
+      <div class="lector-progreso"><div class="lector-barra" id="lector-barra"></div></div>
+      <span class="lector-pct" id="lector-pct">0%</span>
+      <button class="btn-icon" data-act="lector-next" aria-label="Página siguiente"><svg class="i"><use href="#i-arrow-r"/></svg></button>
+    </div>
   </div>
 </div>
 <input type="file" id="ebook-file" accept=".epub,.pdf,application/epub+zip,application/pdf" hidden>
