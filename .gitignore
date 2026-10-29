@@ -4,3 +4,4 @@ copias/
 .vercel
 .env*
 _prueba.epub
+node_modules/

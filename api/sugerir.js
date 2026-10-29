@@ -1,11 +1,11 @@
 // Rellena la ficha de un libro nuevo: páginas, finalidad, categoría, dificultad,
 // etiquetas y el resumen/teoría. Lo hace con los criterios del propio lector, así
-// que se le pasa a Gemini cómo ha clasificado él los libros que ya tiene.
+// que se le pasa a Claude cómo ha clasificado él los libros que ya tiene.
 //
 // Solo viaja lo que ya es público en la web (título, autor, categoría, finalidad,
 // dificultad, páginas y etiquetas). Nunca las notas privadas, ni las reflexiones,
 // ni las citas, ni lo de "cómo lo aplico".
-const { ORIGENES, json, preflight, comprobarAutor, pedirJson } = require("./_gemini");
+const { ORIGENES, json, preflight, comprobarAutor, pedirJson } = require("./_claude");
 
 const limpiar = (s, n) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n);
 const lista = (a, n) => (Array.isArray(a) ? a : []).map(x => limpiar(x, 60)).filter(Boolean).slice(0, n);
@@ -44,11 +44,27 @@ Reglas:
 - Si NO conoces este libro con seguridad, devuelve todo vacío o a 0 y explícalo en "nota". Dejarlo en blanco es mucho mejor que inventárselo.`;
 };
 
+// La forma de la respuesta la impone la API, no una súplica dentro del prompt.
+const ESQUEMA = {
+  type: "object",
+  properties: {
+    paginasTotal: { type: "integer", description: "0 si no estás razonablemente seguro" },
+    finalidad: { type: "string" },
+    categoria: { type: "string" },
+    dificultad: { type: "string" },
+    tags: { type: "array", items: { type: "string" } },
+    resumen: { type: "string" },
+    nota: { type: "string", description: "una frase explicando la categoría y la dificultad" }
+  },
+  required: ["paginasTotal", "finalidad", "categoria", "dificultad", "tags", "resumen", "nota"],
+  additionalProperties: false
+};
+
 module.exports = async (req, res) => {
   const origen = ORIGENES.includes(req.headers.origin) ? req.headers.origin : "";
   if (preflight(req, res, origen)) return;
   if (req.method !== "POST") return json(res, 405, { error: "Método no permitido" }, origen);
-  if (!process.env.GEMINI_API_KEY) return json(res, 500, { error: "Falta la clave GEMINI_API_KEY en Vercel." }, origen);
+  if (!process.env.ANTHROPIC_API_KEY) return json(res, 500, { error: "Falta la clave ANTHROPIC_API_KEY en Vercel." }, origen);
 
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const fallo = await comprobarAutor(token);
@@ -60,8 +76,8 @@ module.exports = async (req, res) => {
 
   try {
     const { salida, modelo, fallo: malo } = await pedirJson({
-      contents: [{ parts: [{ text: instrucciones(d) }] }],
-      generationConfig: { temperature: 0.3, responseMimeType: "application/json" }
+      esquema: ESQUEMA,
+      contenido: [{ type: "text", text: instrucciones(d) }]
     });
     if (malo) return json(res, malo.code, { error: malo.error }, origen);
 
