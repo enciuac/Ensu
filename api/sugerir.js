@@ -1,11 +1,12 @@
 // Rellena la ficha de un libro nuevo: páginas, finalidad, categoría, dificultad,
 // etiquetas y el resumen/teoría. Lo hace con los criterios del propio lector, así
-// que se le pasa a Claude cómo ha clasificado él los libros que ya tiene.
+// que se le pasa a la IA cómo ha clasificado él los libros que ya tiene.
+// Claude primero, Gemini de suplente (ver api/_ia.js).
 //
 // Solo viaja lo que ya es público en la web (título, autor, categoría, finalidad,
 // dificultad, páginas y etiquetas). Nunca las notas privadas, ni las reflexiones,
 // ni las citas, ni lo de "cómo lo aplico".
-const { ORIGENES, json, preflight, comprobarAutor, pedirJson } = require("./_claude");
+const { ORIGENES, json, preflight, comprobarAutor, pedirJson, hayIA } = require("./_ia");
 
 const limpiar = (s, n) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n);
 const lista = (a, n) => (Array.isArray(a) ? a : []).map(x => limpiar(x, 60)).filter(Boolean).slice(0, n);
@@ -64,7 +65,7 @@ module.exports = async (req, res) => {
   const origen = ORIGENES.includes(req.headers.origin) ? req.headers.origin : "";
   if (preflight(req, res, origen)) return;
   if (req.method !== "POST") return json(res, 405, { error: "Método no permitido" }, origen);
-  if (!process.env.ANTHROPIC_API_KEY) return json(res, 500, { error: "Falta la clave ANTHROPIC_API_KEY en Vercel." }, origen);
+  if (!hayIA()) return json(res, 500, { error: "No hay ninguna IA configurada. Añade ANTHROPIC_API_KEY en Vercel." }, origen);
 
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const fallo = await comprobarAutor(token);
@@ -75,9 +76,9 @@ module.exports = async (req, res) => {
   d.paginas = Number(d.paginas) || 0;
 
   try {
-    const { salida, modelo, fallo: malo } = await pedirJson({
+    const { salida, modelo, proveedor, fallo: malo } = await pedirJson({
       esquema: ESQUEMA,
-      contenido: [{ type: "text", text: instrucciones(d) }]
+      texto: instrucciones(d)
     });
     if (malo) return json(res, malo.code, { error: malo.error }, origen);
 
@@ -89,7 +90,7 @@ module.exports = async (req, res) => {
     };
     const paginas = Math.max(0, Math.min(9999, Math.round(Number(salida.paginasTotal) || 0)));
     return json(res, 200, {
-      modelo,
+      modelo, proveedor,
       paginasTotal: d.paginas > 0 ? d.paginas : paginas,
       origenPaginas: d.paginas > 0 ? "openlibrary" : (paginas ? "ia" : ""),
       finalidad: dentro(salida.finalidad, p.finalidades),
